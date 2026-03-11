@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Busca Inteligente de Imóveis</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f6f8;
+padding:40px;
+}
+
+.container{
+max-width:700px;
+margin:auto;
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+h1{
+text-align:center;
+}
+
+input{
+width:100%;
+padding:15px;
+font-size:16px;
+border:1px solid #ccc;
+border-radius:6px;
+}
+
+button{
+margin-top:10px;
+padding:12px 20px;
+font-size:16px;
+background:#2563eb;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1d4ed8;
+}
+
+.resultado{
+margin-top:25px;
+white-space:pre-wrap;
+background:#f9fafb;
+padding:20px;
+border-radius:6px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🏠 Busca Inteligente</h1>
+
+<p>Digite algo como:</p>
+
+<p><i>apartamento em são paulo até 600 mil com 2 quartos</i></p>
+
+<input id="busca" placeholder="Digite sua busca...">
+
+<button onclick="buscar()">Buscar</button>
+
+<div class="resultado" id="resultado"></div>
+
+</div>
+
+<script>
+
+async function buscar(){
+
+const query = document.getElementById("busca").value;
+
+const res = await fetch("http://127.0.0.1:8000/buscar",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({query})
+})
+
+const data = await res.json()
+
+document.getElementById("resultado").innerText = data.resultado
+
+}
+
+</script>
+
+</body>
+</html>
