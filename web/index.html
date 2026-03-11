@@ -475,7 +475,7 @@
     result.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
 
     try {
-      const res  = await fetch('http://127.0.0.1:8000/buscar', {
+      const res  = await fetch('https://web-production-876cc.up.railway.app/buscar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ texto: query })

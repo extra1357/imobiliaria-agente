@@ -1,0 +1,11 @@
+psql postgresql://neondb_owner:npg_t3XlG7pbavHV@ep-raspy-haze-aea92i1v-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+
+
+
+sed -i 's|http://127.0.0.1:8000|https://web-production-876cc.up.railway.app|g' /home/edson/agentes/busca_imoveis.html
+
+
+E também adicione a variável `DATABASE_URL` no Railway — clique na aba **"Variables"** do serviço e adicione:
+
+DATABASE_URL = psql postgresql://neondb_owner:npg_t3XlG7pbavHV@ep-raspy-haze-aea92i1v-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
