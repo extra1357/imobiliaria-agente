@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Imobiliariaperto — Busca Inteligente</title>
+<title>Sofia — Consultora IA | STR Imobiliária</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -16,7 +16,9 @@
     --muted: #6b7280;
     --border: rgba(201,168,76,0.2);
     --glow: rgba(201,168,76,0.15);
-    --green: #25d366;
+    --bubble-user: #1e3a5f;
+    --bubble-sofia: #1a2235;
+    --green: #22c55e;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,8 +27,10 @@
     font-family: 'DM Sans', sans-serif;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   body::before {
@@ -34,468 +38,522 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(201,168,76,0.07) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(99,102,241,0.06) 0%, transparent 60%);
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(201,168,76,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(99,102,241,0.04) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
 
-  .wrapper {
-    position: relative;
-    z-index: 1;
-    max-width: 780px;
-    margin: 0 auto;
-    padding: 40px 20px 80px;
-  }
-
   /* HEADER */
-  .header {
-    text-align: center;
-    margin-bottom: 48px;
-    animation: fadeDown 0.7s ease both;
-  }
-
-  .logo-tag {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--accent);
-    border: 1px solid var(--border);
-    padding: 5px 14px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    background: rgba(201,168,76,0.05);
-  }
-
-  .brand {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(28px, 5vw, 44px);
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.5px;
-    margin-bottom: 8px;
-  }
-
-  .brand span { color: var(--accent); }
-
-  .tagline {
-    font-size: 15px;
-    color: var(--muted);
-    font-weight: 300;
-    margin-bottom: 6px;
-  }
-
-  .powered-by {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .powered-by a {
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s;
-  }
-
-  .powered-by a:hover { color: var(--accent2); }
-
-  /* AVATAR CARD */
-  .ai-card {
+  .chat-header {
+    position: relative;
+    z-index: 10;
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 28px 32px;
-    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
     display: flex;
     align-items: center;
-    gap: 24px;
-    animation: fadeUp 0.7s 0.1s ease both;
-    box-shadow: 0 0 40px var(--glow);
+    gap: 14px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    flex-shrink: 0;
   }
 
-  .avatar-wrap { position: relative; flex-shrink: 0; }
-
-  .avatar {
-    width: 72px;
-    height: 72px;
+  .header-avatar { position: relative; flex-shrink: 0; }
+  .header-avatar svg {
+    width: 44px; height: 44px;
     border-radius: 50%;
     border: 2px solid var(--accent);
-    overflow: hidden;
+    display: block;
     animation: pulse-avatar 3s ease-in-out infinite;
   }
 
-  .avatar-dot {
-    position: absolute;
-    bottom: 3px;
-    right: 3px;
-    width: 14px;
-    height: 14px;
-    background: #22c55e;
+  .header-dot {
+    position: absolute; bottom: 1px; right: 1px;
+    width: 11px; height: 11px;
+    background: var(--green);
     border-radius: 50%;
     border: 2px solid var(--surface);
     animation: blink 2s ease-in-out infinite;
   }
 
-  .ai-text h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 18px;
-    color: var(--accent2);
-    margin-bottom: 4px;
-  }
+  .header-info h3 { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--accent2); }
+  .header-info p { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 4px; }
+  .header-info p::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: inline-block; }
 
-  .ai-text p {
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.5;
-  }
+  .header-brand { margin-left: auto; font-size: 11px; color: var(--muted); text-align: right; line-height: 1.4; }
+  .header-brand strong { color: var(--accent); font-family: 'Playfair Display', serif; font-size: 13px; display: block; }
 
-  /* SEARCH */
-  .search-box {
-    background: var(--surface);
+  /* CHAT */
+  .chat-messages {
+    flex: 1; overflow-y: auto;
+    padding: 20px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    position: relative; z-index: 1;
+    scroll-behavior: smooth;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .msg { display: flex; gap: 10px; animation: msgIn 0.3s ease both; max-width: 85%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.sofia { align-self: flex-start; }
+
+  @keyframes msgIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  .msg-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%; flex-shrink: 0;
+    overflow: hidden; border: 1.5px solid var(--accent);
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; align-self: flex-end;
+  }
+  .msg-avatar svg { width: 32px; height: 32px; }
+
+  .msg-bubble {
+    padding: 12px 16px; border-radius: 18px;
+    font-size: 14px; line-height: 1.7;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .msg.sofia .msg-bubble {
+    background: var(--bubble-sofia);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 6px 6px 6px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-    transition: border-color 0.3s, box-shadow 0.3s;
-    animation: fadeUp 0.7s 0.2s ease both;
+    border-bottom-left-radius: 4px;
+  }
+  .msg.user .msg-bubble {
+    background: var(--bubble-user);
+    border: 1px solid rgba(30,90,150,0.4);
+    border-bottom-right-radius: 4px;
   }
 
-  .search-box:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+  .msg-time { font-size: 10px; color: var(--muted); margin-top: 4px; text-align: right; opacity: 0.7; }
+  .msg.sofia .msg-time { text-align: left; }
+
+  /* CARDS DE IMÓVEIS */
+  .imoveis-wrap {
+    align-self: flex-start;
+    display: flex; flex-direction: column; gap: 8px;
+    max-width: 90%;
+    animation: msgIn 0.3s ease both;
   }
 
-  .search-icon { color: var(--muted); font-size: 18px; flex-shrink: 0; }
-
-  #busca {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    padding: 12px 0;
+  .imovel-aviso {
+    font-size: 13px; color: var(--muted);
+    padding: 6px 4px;
+    font-style: italic;
   }
 
-  #busca::placeholder { color: var(--muted); }
-
-  .btn-buscar {
-    background: linear-gradient(135deg, var(--accent), #b8913e);
-    color: #0a0f1e;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .btn-buscar:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(201,168,76,0.4); }
-  .btn-buscar:active { transform: translateY(0); }
-  .btn-buscar.loading { opacity: 0.7; pointer-events: none; }
-
-  /* RESULTADO */
-  #resultado-wrap { display: none; animation: fadeUp 0.5s ease both; }
-
-  .resultado-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-    font-size: 13px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .resultado-header::before,
-  .resultado-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-  #resultado {
-    background: var(--surface);
+  .imovel-card {
+    background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px 28px;
-    white-space: pre-wrap;
-    font-size: 14px;
-    line-height: 1.8;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    margin-bottom: 16px;
-  }
-
-  /* WHATSAPP BUTTON */
-  .btn-whatsapp {
-    display: none;
-    width: 100%;
-    padding: 14px 24px;
-    background: linear-gradient(135deg, #25d366, #128c3e);
-    color: white;
-    border: none;
     border-radius: 14px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all 0.2s;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
     text-decoration: none;
-    margin-bottom: 32px;
-    box-shadow: 0 4px 20px rgba(37,211,102,0.2);
-    animation: fadeUp 0.5s ease both;
+    color: var(--text);
+    display: block;
+    cursor: pointer;
   }
 
-  .btn-whatsapp:hover {
+  .imovel-card:hover {
+    border-color: var(--accent);
     transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(37,211,102,0.35);
+    box-shadow: 0 8px 24px rgba(201,168,76,0.15);
   }
 
-  .btn-whatsapp svg { flex-shrink: 0; }
+  .imovel-foto {
+    width: 100%; height: 160px;
+    object-fit: cover;
+    display: block;
+    background: var(--surface);
+  }
+
+  .imovel-foto-placeholder {
+    width: 100%; height: 160px;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+  }
+
+  .imovel-info { padding: 12px 14px; }
+
+  .imovel-tipo {
+    font-size: 11px; font-weight: 500;
+    color: var(--accent); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 4px;
+  }
+
+  .imovel-endereco {
+    font-size: 13px; font-weight: 500;
+    color: var(--text); margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .imovel-local {
+    font-size: 12px; color: var(--muted); margin-bottom: 8px;
+  }
+
+  .imovel-preco {
+    font-size: 17px; font-weight: 700;
+    color: var(--accent2); margin-bottom: 8px;
+  }
+
+  .imovel-details {
+    display: flex; gap: 12px;
+    font-size: 12px; color: var(--muted);
+    flex-wrap: wrap;
+  }
+
+  .imovel-detail { display: flex; align-items: center; gap: 4px; }
+
+  .imovel-link-hint {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--accent);
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  .cards-footer {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .btn-wpp {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #25d366, #128c3e);
+    color: white; border: none; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .btn-wpp:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,211,102,0.3); }
 
   /* TYPING */
-  .typing { display: flex; align-items: center; gap: 6px; padding: 16px 28px; }
+  .typing-bubble { display: flex; align-self: flex-start; gap: 10px; animation: msgIn 0.3s ease both; }
+  .typing-dots {
+    background: var(--bubble-sofia); border: 1px solid var(--border);
+    border-radius: 18px; border-bottom-left-radius: 4px;
+    padding: 14px 18px; display: flex; gap: 5px; align-items: center;
+  }
+  .typing-dots span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: bounce 1.2s ease-in-out infinite; }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 
-  .typing span {
-    width: 8px; height: 8px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: bounce 1.2s ease-in-out infinite;
+  .welcome-msg {
+    align-self: center; text-align: center;
+    padding: 10px 18px;
+    background: rgba(201,168,76,0.05);
+    border: 1px solid var(--border);
+    border-radius: 12px; font-size: 12px; color: var(--muted);
   }
 
-  .typing span:nth-child(2) { animation-delay: 0.2s; }
-  .typing span:nth-child(3) { animation-delay: 0.4s; }
-
-  /* TRUST BADGE */
-  .trust-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-bottom: 32px;
-    animation: fadeUp 0.7s 0.3s ease both;
+  /* INPUT */
+  .chat-input-area {
+    position: relative; z-index: 10;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 14px 16px; display: flex; align-items: flex-end; gap: 10px; flex-shrink: 0;
   }
 
-  .trust-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--muted);
+  .input-wrap {
+    flex: 1; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 24px;
+    padding: 10px 18px; display: flex; align-items: center;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
+
+  #msg-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; resize: none; max-height: 120px; line-height: 1.5;
+  }
+  #msg-input::placeholder { color: var(--muted); }
+
+  .btn-send {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #b8913e);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s; color: #0a0f1e;
+  }
+  .btn-send:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(201,168,76,0.4); }
+  .btn-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-send svg { width: 20px; height: 20px; }
+
+  .input-hint {
+    text-align: center; font-size: 11px; color: var(--muted);
+    padding: 6px 0 2px; flex-shrink: 0;
+    position: relative; z-index: 10; background: var(--surface);
   }
 
-  .trust-item span { font-size: 14px; }
+  @keyframes pulse-avatar { 0%,100% { box-shadow:0 0 12px rgba(201,168,76,0.3); } 50% { box-shadow:0 0 24px rgba(201,168,76,0.6); } }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+  @keyframes bounce { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-6px); } }
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
-  /* FOOTER */
-  .footer {
-    text-align: center;
-    margin-top: 48px;
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1.8;
+  @media (max-width: 480px) {
+    .header-brand { display: none; }
+    .msg, .imoveis-wrap { max-width: 95%; }
+    .imovel-foto { height: 130px; }
   }
-
-  .footer a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  .footer a:hover { color: var(--accent2); }
-
-  .footer .divider {
-    display: inline-block;
-    margin: 0 8px;
-    opacity: 0.4;
-  }
-
-  /* ANIMATIONS */
-  @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
-  @keyframes pulse-avatar { 0%,100% { box-shadow:0 0 20px rgba(201,168,76,0.3); } 50% { box-shadow:0 0 35px rgba(201,168,76,0.6); } }
-  @keyframes blink    { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-  @keyframes bounce   { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-8px); } }
-  @keyframes spin     { to { transform:rotate(360deg); } }
-  .spin { display:inline-block; animation:spin 1s linear infinite; }
 </style>
 </head>
 <body>
-<div class="wrapper">
 
-  <!-- HEADER -->
-  <div class="header">
-    <div class="logo-tag">✦ Assistente Inteligente de Imóveis</div>
-    <div class="brand">Imobiliária<span>Perto</span></div>
-    <p class="tagline">Encontre o imóvel ideal com busca em linguagem natural</p>
-    <p class="powered-by">
-      Assistente desenvolvido por <a href="https://www.strsoftware.com.br" target="_blank">STR Software</a>
-      — tecnologia e inovação para o mercado imobiliário
-    </p>
+<div class="chat-header">
+  <div class="header-avatar">
+    <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="sg" cx="50%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#f7cfa0"/>
+          <stop offset="100%" stop-color="#d4915c"/>
+        </radialGradient>
+        <radialGradient id="bg2" cx="50%" cy="100%" r="80%">
+          <stop offset="0%" stop-color="#2a3a5c"/>
+          <stop offset="100%" stop-color="#1a2235"/>
+        </radialGradient>
+      </defs>
+      <circle cx="36" cy="36" r="36" fill="url(#bg2)"/>
+      <ellipse cx="36" cy="74" rx="26" ry="18" fill="#c9a84c"/>
+      <ellipse cx="36" cy="67" rx="20" ry="13" fill="#b8913e"/>
+      <rect x="30.5" y="50" width="11" height="11" rx="5" fill="url(#sg)"/>
+      <ellipse cx="36" cy="33" rx="15.5" ry="17.5" fill="url(#sg)"/>
+      <ellipse cx="20.5" cy="33" rx="3" ry="5" fill="#d4a070"/>
+      <ellipse cx="51.5" cy="33" rx="3" ry="5" fill="#d4a070"/>
+      <ellipse cx="36" cy="17" rx="18" ry="13" fill="#1e0d04"/>
+      <ellipse cx="29" cy="32.5" rx="4" ry="4.5" fill="white"/>
+      <ellipse cx="43" cy="32.5" rx="4" ry="4.5" fill="white"/>
+      <circle cx="29.5" cy="33" r="2.8" fill="#7b4a20"/>
+      <circle cx="43.5" cy="33" r="2.8" fill="#7b4a20"/>
+      <path d="M29 43.5 Q36 49 43 43.5" stroke="#c04535" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="header-dot"></div>
   </div>
-
-  <!-- TRUST BAR -->
-  <div class="trust-bar">
-    <div class="trust-item"><span>🔒</span> Dados seguros</div>
-    <div class="trust-item"><span>🤖</span> IA avançada</div>
-    <div class="trust-item"><span>🏠</span> Catálogo atualizado</div>
-    <div class="trust-item"><span>⚡</span> Resposta imediata</div>
+  <div class="header-info">
+    <h3>Sofia</h3>
+    <p>Online agora</p>
   </div>
-
-  <!-- AVATAR CARD -->
-  <div class="ai-card">
-    <div class="avatar-wrap">
-      <div class="avatar">
-        <svg viewBox="0 0 72 72" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="skinGrad" cx="50%" cy="35%" r="65%">
-              <stop offset="0%" stop-color="#f7cfa0"/>
-              <stop offset="100%" stop-color="#d4915c"/>
-            </radialGradient>
-            <radialGradient id="bgGrad" cx="50%" cy="100%" r="80%">
-              <stop offset="0%" stop-color="#2a3a5c"/>
-              <stop offset="100%" stop-color="#1a2235"/>
-            </radialGradient>
-          </defs>
-          <circle cx="36" cy="36" r="36" fill="url(#bgGrad)"/>
-          <ellipse cx="36" cy="74" rx="26" ry="18" fill="#c9a84c"/>
-          <ellipse cx="36" cy="67" rx="20" ry="13" fill="#b8913e"/>
-          <rect x="30.5" y="50" width="11" height="11" rx="5" fill="url(#skinGrad)"/>
-          <ellipse cx="36" cy="33" rx="15.5" ry="17.5" fill="url(#skinGrad)"/>
-          <ellipse cx="20.5" cy="33" rx="3" ry="5" fill="#d4a070"/>
-          <ellipse cx="51.5" cy="33" rx="3" ry="5" fill="#d4a070"/>
-          <ellipse cx="36" cy="17" rx="18" ry="13" fill="#1e0d04"/>
-          <path d="M18 20 Q15 35 18 50 Q20 52 21 48 Q19 35 21 22Z" fill="#1e0d04"/>
-          <path d="M54 20 Q57 35 54 50 Q52 52 51 48 Q53 35 51 22Z" fill="#1e0d04"/>
-          <path d="M20 22 Q22 12 36 11 Q50 12 52 22 Q47 17 36 17 Q25 17 20 22Z" fill="#1e0d04"/>
-          <ellipse cx="29" cy="32.5" rx="4" ry="4.5" fill="white"/>
-          <ellipse cx="43" cy="32.5" rx="4" ry="4.5" fill="white"/>
-          <circle cx="29.5" cy="33" r="2.8" fill="#7b4a20"/>
-          <circle cx="43.5" cy="33" r="2.8" fill="#7b4a20"/>
-          <circle cx="29.8" cy="33.3" r="1.4" fill="#160800"/>
-          <circle cx="43.8" cy="33.3" r="1.4" fill="#160800"/>
-          <circle cx="30.6" cy="32.3" r="0.8" fill="white"/>
-          <circle cx="44.6" cy="32.3" r="0.8" fill="white"/>
-          <path d="M25 27.5 Q29 25.8 32.5 27.5" stroke="#1e0d04" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-          <path d="M39.5 27.5 Q43 25.8 47 27.5" stroke="#1e0d04" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-          <path d="M34.5 37 Q36 40 37.5 37" stroke="#bf8050" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-          <path d="M29 43.5 Q36 49 43 43.5" stroke="#c04535" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-          <path d="M31 43.5 Q33.5 42 36 43 Q38.5 42 41 43.5" stroke="#d05545" stroke-width="1.1" fill="none" stroke-linecap="round"/>
-          <ellipse cx="23" cy="39.5" rx="5" ry="3" fill="rgba(225,100,80,0.2)"/>
-          <ellipse cx="49" cy="39.5" rx="5" ry="3" fill="rgba(225,100,80,0.2)"/>
-          <circle cx="20.5" cy="36.5" r="2.5" fill="#c9a84c"/>
-          <circle cx="51.5" cy="36.5" r="2.5" fill="#c9a84c"/>
-          <ellipse cx="20.5" cy="40.5" rx="1.5" ry="2" fill="#e8c97a"/>
-          <ellipse cx="51.5" cy="40.5" rx="1.5" ry="2" fill="#e8c97a"/>
-        </svg>
-      </div>
-      <div class="avatar-dot"></div>
-    </div>
-    <div class="ai-text">
-      <h3>Olá! Sou a Sofia, consultora da ImobiliáriaPerto</h3>
-      <p>Estou aqui para ajudá-lo a encontrar o imóvel perfeito. Descreva o que procura ou faça qualquer pergunta — responderei na hora com segurança e precisão.</p>
-    </div>
+  <div class="header-brand">
+    <strong>STR Imobiliária</strong>
+    Consultora IA
   </div>
-
-  <!-- SEARCH BOX -->
-  <div class="search-box">
-    <span class="search-icon">🔍</span>
-    <input id="busca" placeholder="Ex: apartamento em São Paulo até 600 mil com 2 quartos..." autocomplete="off">
-    <button class="btn-buscar" id="btn" onclick="buscar()">
-      <span id="btn-icon">✦</span>
-      <span id="btn-text">Buscar</span>
-    </button>
-  </div>
-
-  <!-- RESULTADO -->
-  <div id="resultado-wrap">
-    <div class="resultado-header">Resposta da Sofia</div>
-    <div id="resultado"></div>
-
-    <!-- BOTÃO WHATSAPP -->
-    <a id="btn-whatsapp" class="btn-whatsapp" href="#" target="_blank">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-      </svg>
-      Agendar visita pelo WhatsApp
-    </a>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="footer">
-    <strong style="color: var(--accent); font-family: 'Playfair Display', serif;">ImobiliáriaPerto</strong>
-    — Conectando pessoas ao lar ideal com tecnologia de ponta
-    <br><br>
-    🛠️ Assistente desenvolvido por
-    <a href="https://www.strsoftware.com.br" target="_blank">STR Software</a>
-    — Soluções tecnológicas para o mercado imobiliário
-    <br>
-    <a href="https://www.strsoftware.com.br" target="_blank">www.strsoftware.com.br</a>
-    <span class="divider">|</span>
-    <span>© 2025 Todos os direitos reservados</span>
-  </div>
-
 </div>
 
-<script>
-  const WHATSAPP = '5511976661297';
+<div class="chat-messages" id="chat">
+  <div class="welcome-msg">🏠 Bem-vindo ao assistente inteligente da STR Imobiliária</div>
 
-  document.getElementById('busca').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') buscar();
+  <div class="msg sofia">
+    <div class="msg-avatar">
+      <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+        <defs><radialGradient id="sg2" cx="50%" cy="35%" r="65%"><stop offset="0%" stop-color="#f7cfa0"/><stop offset="100%" stop-color="#d4915c"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="36" fill="#1a2235"/>
+        <ellipse cx="36" cy="33" rx="15.5" ry="17.5" fill="url(#sg2)"/>
+        <ellipse cx="29" cy="32.5" rx="4" ry="4.5" fill="white"/>
+        <ellipse cx="43" cy="32.5" rx="4" ry="4.5" fill="white"/>
+        <circle cx="29.5" cy="33" r="2.8" fill="#7b4a20"/>
+        <circle cx="43.5" cy="33" r="2.8" fill="#7b4a20"/>
+        <path d="M29 43.5 Q36 49 43 43.5" stroke="#c04535" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="msg-bubble">Olá! 👋 Sou a Sofia, consultora da STR Imobiliária.
+
+Estou aqui para te ajudar a encontrar o imóvel ideal. Pode me dizer o que procura? Por exemplo:
+
+• "Quero uma casa em Salto para comprar"
+• "Apartamento em São Paulo até 500 mil"
+• "Imóvel para alugar em Campinas"</div>
+      <div class="msg-time">agora</div>
+    </div>
+  </div>
+</div>
+
+<div class="chat-input-area">
+  <div class="input-wrap">
+    <textarea id="msg-input" placeholder="Digite sua mensagem..." rows="1"></textarea>
+  </div>
+  <button class="btn-send" id="btn-send" onclick="enviar()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"></line>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+    </svg>
+  </button>
+</div>
+<div class="input-hint">Powered by <strong style="color:var(--accent)">STR Software</strong> · IA especializada em imóveis</div>
+
+<script>
+  const BACKEND  = 'https://web-production-876cc.up.railway.app/buscar';
+  const WHATSAPP = '5511976661297';
+  const SESSION_ID = 'session_' + Math.random().toString(36).substr(2, 9);
+
+  const chat    = document.getElementById('chat');
+  const input   = document.getElementById('msg-input');
+  const btnSend = document.getElementById('btn-send');
+
+  const SOFIA_AVATAR = `<svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="sgx" cx="50%" cy="35%" r="65%"><stop offset="0%" stop-color="#f7cfa0"/><stop offset="100%" stop-color="#d4915c"/></radialGradient></defs>
+    <circle cx="36" cy="36" r="36" fill="#1a2235"/>
+    <ellipse cx="36" cy="33" rx="15.5" ry="17.5" fill="url(#sgx)"/>
+    <ellipse cx="29" cy="32.5" rx="4" ry="4.5" fill="white"/>
+    <ellipse cx="43" cy="32.5" rx="4" ry="4.5" fill="white"/>
+    <circle cx="29.5" cy="33" r="2.8" fill="#7b4a20"/>
+    <circle cx="43.5" cy="33" r="2.8" fill="#7b4a20"/>
+    <path d="M29 43.5 Q36 49 43 43.5" stroke="#c04535" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  </svg>`;
+
+  input.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
   });
 
-  async function buscar() {
-    const query   = document.getElementById('busca').value.trim();
-    if (!query) return;
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
+  });
 
-    const btn     = document.getElementById('btn');
-    const btnIcon = document.getElementById('btn-icon');
-    const btnText = document.getElementById('btn-text');
-    const wrap    = document.getElementById('resultado-wrap');
-    const result  = document.getElementById('resultado');
-    const btnWpp  = document.getElementById('btn-whatsapp');
+  function getTime() {
+    return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
 
-    btn.classList.add('loading');
-    btnIcon.innerHTML = '<span class="spin">↻</span>';
-    btnText.innerText = 'Buscando...';
-    wrap.style.display = 'block';
-    btnWpp.style.display = 'none';
-    result.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  function formatPreco(valor) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(valor);
+  }
 
-    try {
-      const res  = await fetch('https://web-production-876cc.up.railway.app/buscar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto: query })
-      });
-      const data = await res.json();
-      result.innerText = data.resultado;
+  function addMsgTexto(text, type) {
+    const div = document.createElement('div');
+    div.className = `msg ${type}`;
+    const avatar = type === 'sofia'
+      ? `<div class="msg-avatar">${SOFIA_AVATAR}</div>`
+      : `<div class="msg-avatar">👤</div>`;
+    div.innerHTML = `${avatar}<div><div class="msg-bubble">${text}</div><div class="msg-time">${getTime()}</div></div>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
 
-      // Monta mensagem para o WhatsApp
-      const msg = `Olá! Vim pelo site ImobiliáriaPerto e gostaria de agendar uma visita.\n\n*Minha busca:* ${query}\n\n*Resultado encontrado:*\n${data.resultado}`;
-      const url = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
-      btnWpp.href = url;
-      btnWpp.style.display = 'flex';
+  function addMsgCards(texto, dados) {
+    const wrap = document.createElement('div');
+    wrap.className = 'imoveis-wrap';
 
-    } catch (err) {
-      result.innerText = '⚠️ Não foi possível conectar ao servidor. Verifique se o backend está rodando.';
+    // Texto introdutório da Sofia
+    if (texto) {
+      const introDiv = document.createElement('div');
+      introDiv.className = 'msg sofia';
+      introDiv.innerHTML = `
+        <div class="msg-avatar">${SOFIA_AVATAR}</div>
+        <div><div class="msg-bubble">${texto}</div></div>`;
+      chat.appendChild(introDiv);
     }
 
-    btn.classList.remove('loading');
-    btnIcon.innerText = '✦';
-    btnText.innerText = 'Buscar';
+    // Aviso de cidades próximas
+    if (dados.aviso) {
+      const avisoDiv = document.createElement('div');
+      avisoDiv.className = 'imovel-aviso';
+      avisoDiv.textContent = dados.aviso;
+      wrap.appendChild(avisoDiv);
+    }
+
+    // Cards dos imóveis
+    dados.imoveis.forEach(imovel => {
+      const card = document.createElement('a');
+      card.className = 'imovel-card';
+      card.href = imovel.link || '#';
+      card.target = '_blank';
+      card.rel = 'noreferrer';
+
+      const fotoHTML = imovel.foto
+        ? `<img class="imovel-foto" src="${imovel.foto}" alt="${imovel.tipo}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : '';
+      const placeholderHTML = `<div class="imovel-foto-placeholder" ${imovel.foto ? 'style="display:none"' : ''}>🏠</div>`;
+
+      card.innerHTML = `
+        ${fotoHTML}${placeholderHTML}
+        <div class="imovel-info">
+          <div class="imovel-tipo">${imovel.tipo} · ${imovel.finalidade}</div>
+          <div class="imovel-endereco">${imovel.endereco}</div>
+          <div class="imovel-local">📍 ${imovel.bairro ? imovel.bairro + ' — ' : ''}${imovel.cidade}/${imovel.estado}</div>
+          <div class="imovel-preco">${formatPreco(imovel.preco)}</div>
+          <div class="imovel-details">
+            ${imovel.quartos ? `<span class="imovel-detail">🛏 ${imovel.quartos} quartos</span>` : ''}
+            ${imovel.banheiros ? `<span class="imovel-detail">🚿 ${imovel.banheiros} banheiros</span>` : ''}
+            ${imovel.vagas ? `<span class="imovel-detail">🚗 ${imovel.vagas} vagas</span>` : ''}
+            ${imovel.metragem ? `<span class="imovel-detail">📐 ${imovel.metragem}m²</span>` : ''}
+          </div>
+          ${imovel.link ? `<div class="imovel-link-hint">🔗 Ver detalhes completos</div>` : ''}
+        </div>`;
+
+      wrap.appendChild(card);
+    });
+
+    // Botão WhatsApp
+    const footer = document.createElement('div');
+    footer.className = 'cards-footer';
+    footer.innerHTML = `
+      <a class="btn-wpp" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent('Olá! Vi imóveis no site e gostaria de mais informações.')}" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        Falar com corretor
+      </a>`;
+    wrap.appendChild(footer);
+
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'msg-time';
+    timeDiv.style.paddingLeft = '4px';
+    timeDiv.textContent = getTime();
+    wrap.appendChild(timeDiv);
+
+    chat.appendChild(wrap);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function addTyping() {
+    const div = document.createElement('div');
+    div.className = 'typing-bubble';
+    div.id = 'typing';
+    div.innerHTML = `
+      <div class="msg-avatar">${SOFIA_AVATAR}</div>
+      <div class="typing-dots"><span></span><span></span><span></span></div>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+  }
+
+  async function enviar() {
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    btnSend.disabled = true;
+
+    addMsgTexto(texto, 'user');
+    addTyping();
+
+    try {
+      const res = await fetch(BACKEND, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto, session_id: SESSION_ID })
+      });
+      const data = await res.json();
+      removeTyping();
+
+      // Verifica se a resposta contém dados estruturados de imóveis
+      if (data.imoveis && data.imoveis.length > 0) {
+        addMsgCards(data.texto_intro || null, data);
+      } else {
+        addMsgTexto(data.resultado || data.texto_intro || 'Desculpe, não consegui processar.', 'sofia');
+      }
+
+    } catch (err) {
+      removeTyping();
+      addMsgTexto('⚠️ Não consegui conectar ao servidor. Tente novamente.', 'sofia');
+    }
+
+    btnSend.disabled = false;
+    input.focus();
   }
 </script>
 </body>

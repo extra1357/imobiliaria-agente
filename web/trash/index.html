@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imobiliariaperto — Busca Inteligente</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --accent: #c9a84c;
+    --accent2: #e8c97a;
+    --text: #f0ece4;
+    --muted: #6b7280;
+    --border: rgba(201,168,76,0.2);
+    --glow: rgba(201,168,76,0.15);
+    --green: #25d366;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(201,168,76,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(99,102,241,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeDown 0.7s ease both;
+  }
+
+  .logo-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    background: rgba(201,168,76,0.05);
+  }
+
+  .brand {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .brand span { color: var(--accent); }
+
+  .tagline {
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 300;
+    margin-bottom: 6px;
+  }
+
+  .powered-by {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .powered-by a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .powered-by a:hover { color: var(--accent2); }
+
+  /* AVATAR CARD */
+  .ai-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    animation: fadeUp 0.7s 0.1s ease both;
+    box-shadow: 0 0 40px var(--glow);
+  }
+
+  .avatar-wrap { position: relative; flex-shrink: 0; }
+
+  .avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    overflow: hidden;
+    animation: pulse-avatar 3s ease-in-out infinite;
+  }
+
+  .avatar-dot {
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+    width: 14px;
+    height: 14px;
+    background: #22c55e;
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  .ai-text h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--accent2);
+    margin-bottom: 4px;
+  }
+
+  .ai-text p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* SEARCH */
+  .search-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px 6px 6px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    animation: fadeUp 0.7s 0.2s ease both;
+  }
+
+  .search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+  }
+
+  .search-icon { color: var(--muted); font-size: 18px; flex-shrink: 0; }
+
+  #busca {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 12px 0;
+  }
+
+  #busca::placeholder { color: var(--muted); }
+
+  .btn-buscar {
+    background: linear-gradient(135deg, var(--accent), #b8913e);
+    color: #0a0f1e;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-buscar:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(201,168,76,0.4); }
+  .btn-buscar:active { transform: translateY(0); }
+  .btn-buscar.loading { opacity: 0.7; pointer-events: none; }
+
+  /* RESULTADO */
+  #resultado-wrap { display: none; animation: fadeUp 0.5s ease both; }
+
+  .resultado-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .resultado-header::before,
+  .resultado-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  #resultado {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 28px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    margin-bottom: 16px;
+  }
+
+  /* WHATSAPP BUTTON */
+  .btn-whatsapp {
+    display: none;
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #25d366, #128c3e);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(37,211,102,0.2);
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .btn-whatsapp:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(37,211,102,0.35);
+  }
+
+  .btn-whatsapp svg { flex-shrink: 0; }
+
+  /* TYPING */
+  .typing { display: flex; align-items: center; gap: 6px; padding: 16px 28px; }
+
+  .typing span {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  /* TRUST BADGE */
+  .trust-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+    animation: fadeUp 0.7s 0.3s ease both;
+  }
+
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .trust-item span { font-size: 14px; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .footer a:hover { color: var(--accent2); }
+
+  .footer .divider {
+    display: inline-block;
+    margin: 0 8px;
+    opacity: 0.4;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
+  @keyframes pulse-avatar { 0%,100% { box-shadow:0 0 20px rgba(201,168,76,0.3); } 50% { box-shadow:0 0 35px rgba(201,168,76,0.6); } }
+  @keyframes blink    { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+  @keyframes bounce   { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-8px); } }
+  @keyframes spin     { to { transform:rotate(360deg); } }
+  .spin { display:inline-block; animation:spin 1s linear infinite; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-tag">✦ Assistente Inteligente de Imóveis</div>
+    <div class="brand">Imobiliária<span>Perto</span></div>
+    <p class="tagline">Encontre o imóvel ideal com busca em linguagem natural</p>
+    <p class="powered-by">
+      Assistente desenvolvido por <a href="https://www.strsoftware.com.br" target="_blank">STR Software</a>
+      — tecnologia e inovação para o mercado imobiliário
+    </p>
+  </div>
+
+  <!-- TRUST BAR -->
+  <div class="trust-bar">
+    <div class="trust-item"><span>🔒</span> Dados seguros</div>
+    <div class="trust-item"><span>🤖</span> IA avançada</div>
+    <div class="trust-item"><span>🏠</span> Catálogo atualizado</div>
+    <div class="trust-item"><span>⚡</span> Resposta imediata</div>
+  </div>
+
+  <!-- AVATAR CARD -->
+  <div class="ai-card">
+    <div class="avatar-wrap">
+      <div class="avatar">
+        <svg viewBox="0 0 72 72" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="skinGrad" cx="50%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#f7cfa0"/>
+              <stop offset="100%" stop-color="#d4915c"/>
+            </radialGradient>
+            <radialGradient id="bgGrad" cx="50%" cy="100%" r="80%">
+              <stop offset="0%" stop-color="#2a3a5c"/>
+              <stop offset="100%" stop-color="#1a2235"/>
+            </radialGradient>
+          </defs>
+          <circle cx="36" cy="36" r="36" fill="url(#bgGrad)"/>
+          <ellipse cx="36" cy="74" rx="26" ry="18" fill="#c9a84c"/>
+          <ellipse cx="36" cy="67" rx="20" ry="13" fill="#b8913e"/>
+          <rect x="30.5" y="50" width="11" height="11" rx="5" fill="url(#skinGrad)"/>
+          <ellipse cx="36" cy="33" rx="15.5" ry="17.5" fill="url(#skinGrad)"/>
+          <ellipse cx="20.5" cy="33" rx="3" ry="5" fill="#d4a070"/>
+          <ellipse cx="51.5" cy="33" rx="3" ry="5" fill="#d4a070"/>
+          <ellipse cx="36" cy="17" rx="18" ry="13" fill="#1e0d04"/>
+          <path d="M18 20 Q15 35 18 50 Q20 52 21 48 Q19 35 21 22Z" fill="#1e0d04"/>
+          <path d="M54 20 Q57 35 54 50 Q52 52 51 48 Q53 35 51 22Z" fill="#1e0d04"/>
+          <path d="M20 22 Q22 12 36 11 Q50 12 52 22 Q47 17 36 17 Q25 17 20 22Z" fill="#1e0d04"/>
+          <ellipse cx="29" cy="32.5" rx="4" ry="4.5" fill="white"/>
+          <ellipse cx="43" cy="32.5" rx="4" ry="4.5" fill="white"/>
+          <circle cx="29.5" cy="33" r="2.8" fill="#7b4a20"/>
+          <circle cx="43.5" cy="33" r="2.8" fill="#7b4a20"/>
+          <circle cx="29.8" cy="33.3" r="1.4" fill="#160800"/>
+          <circle cx="43.8" cy="33.3" r="1.4" fill="#160800"/>
+          <circle cx="30.6" cy="32.3" r="0.8" fill="white"/>
+          <circle cx="44.6" cy="32.3" r="0.8" fill="white"/>
+          <path d="M25 27.5 Q29 25.8 32.5 27.5" stroke="#1e0d04" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M39.5 27.5 Q43 25.8 47 27.5" stroke="#1e0d04" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M34.5 37 Q36 40 37.5 37" stroke="#bf8050" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M29 43.5 Q36 49 43 43.5" stroke="#c04535" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M31 43.5 Q33.5 42 36 43 Q38.5 42 41 43.5" stroke="#d05545" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+          <ellipse cx="23" cy="39.5" rx="5" ry="3" fill="rgba(225,100,80,0.2)"/>
+          <ellipse cx="49" cy="39.5" rx="5" ry="3" fill="rgba(225,100,80,0.2)"/>
+          <circle cx="20.5" cy="36.5" r="2.5" fill="#c9a84c"/>
+          <circle cx="51.5" cy="36.5" r="2.5" fill="#c9a84c"/>
+          <ellipse cx="20.5" cy="40.5" rx="1.5" ry="2" fill="#e8c97a"/>
+          <ellipse cx="51.5" cy="40.5" rx="1.5" ry="2" fill="#e8c97a"/>
+        </svg>
+      </div>
+      <div class="avatar-dot"></div>
+    </div>
+    <div class="ai-text">
+      <h3>Olá! Sou a Sofia, consultora da ImobiliáriaPerto</h3>
+      <p>Estou aqui para ajudá-lo a encontrar o imóvel perfeito. Descreva o que procura ou faça qualquer pergunta — responderei na hora com segurança e precisão.</p>
+    </div>
+  </div>
+
+  <!-- SEARCH BOX -->
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input id="busca" placeholder="Ex: apartamento em São Paulo até 600 mil com 2 quartos..." autocomplete="off">
+    <button class="btn-buscar" id="btn" onclick="buscar()">
+      <span id="btn-icon">✦</span>
+      <span id="btn-text">Buscar</span>
+    </button>
+  </div>
+
+  <!-- RESULTADO -->
+  <div id="resultado-wrap">
+    <div class="resultado-header">Resposta da Sofia</div>
+    <div id="resultado"></div>
+
+    <!-- BOTÃO WHATSAPP -->
+    <a id="btn-whatsapp" class="btn-whatsapp" href="#" target="_blank">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+      </svg>
+      Agendar visita pelo WhatsApp
+    </a>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <strong style="color: var(--accent); font-family: 'Playfair Display', serif;">ImobiliáriaPerto</strong>
+    — Conectando pessoas ao lar ideal com tecnologia de ponta
+    <br><br>
+    🛠️ Assistente desenvolvido por
+    <a href="https://www.strsoftware.com.br" target="_blank">STR Software</a>
+    — Soluções tecnológicas para o mercado imobiliário
+    <br>
+    <a href="https://www.strsoftware.com.br" target="_blank">www.strsoftware.com.br</a>
+    <span class="divider">|</span>
+    <span>© 2025 Todos os direitos reservados</span>
+  </div>
+
+</div>
+
+<script>
+  const WHATSAPP = '5511976661297';
+
+  document.getElementById('busca').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') buscar();
+  });
+
+  async function buscar() {
+    const query   = document.getElementById('busca').value.trim();
+    if (!query) return;
+
+    const btn     = document.getElementById('btn');
+    const btnIcon = document.getElementById('btn-icon');
+    const btnText = document.getElementById('btn-text');
+    const wrap    = document.getElementById('resultado-wrap');
+    const result  = document.getElementById('resultado');
+    const btnWpp  = document.getElementById('btn-whatsapp');
+
+    btn.classList.add('loading');
+    btnIcon.innerHTML = '<span class="spin">↻</span>';
+    btnText.innerText = 'Buscando...';
+    wrap.style.display = 'block';
+    btnWpp.style.display = 'none';
+    result.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+
+    try {
+      const res  = await fetch('https://web-production-876cc.up.railway.app/buscar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: query })
+      });
+      const data = await res.json();
+      result.innerText = data.resultado;
+
+      // Monta mensagem para o WhatsApp
+      const msg = `Olá! Vim pelo site ImobiliáriaPerto e gostaria de agendar uma visita.\n\n*Minha busca:* ${query}\n\n*Resultado encontrado:*\n${data.resultado}`;
+      const url = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+      btnWpp.href = url;
+      btnWpp.style.display = 'flex';
+
+    } catch (err) {
+      result.innerText = '⚠️ Não foi possível conectar ao servidor. Verifique se o backend está rodando.';
+    }
+
+    btn.classList.remove('loading');
+    btnIcon.innerText = '✦';
+    btnText.innerText = 'Buscar';
+  }
+</script>
+</body>
+</html>

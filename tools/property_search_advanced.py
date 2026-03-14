@@ -1,5 +1,8 @@
 from core.db import get_connection
 import re
+import json
+
+SITE_URL = "https://www.imobiliariaperto.com.br"
 
 CIDADES_PROXIMAS = {
     "Salto": ["Itu", "Indaiatuba", "Sorocaba"],
@@ -40,7 +43,6 @@ def buscar_bairros_disponiveis(cidade: str, tipo: str = None, finalidade: str = 
 def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
                    finalidade=None, preco_max=None, preco_min=None,
                    texto=None, limit=4):
-    # Interpreta texto livre se fornecido
     if texto:
         filtros = interpretar_busca(texto)
         cidade     = filtros.get("cidade") or cidade
@@ -50,13 +52,13 @@ def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
         preco_max  = filtros.get("preco_max") or preco_max
 
     if not any([cidade, quartos, finalidade, tipo, preco_max, bairro]):
-        return (
+        return json.dumps({"tipo": "texto", "conteudo": (
             "Não consegui identificar o que você procura. 😊\n\n"
             "Tente algo como:\n"
             "• 'apartamento em São Paulo até 500 mil'\n"
             "• 'casa em Salto com 3 quartos'\n"
             "• 'imóvel para alugar em Campinas'"
-        )
+        )})
 
     conn = get_connection()
     cur = conn.cursor()
@@ -64,7 +66,7 @@ def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
     query = """
         SELECT tipo, endereco, bairro, cidade, estado,
                preco, quartos, banheiros, vagas, metragem,
-               finalidade, descricao, codigo
+               finalidade, descricao, codigo, slug, imagens
         FROM imoveis
         WHERE disponivel = true
     """
@@ -92,7 +94,6 @@ def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
         query += " AND preco >= %s"
         params.append(preco_min)
 
-    # Ordena por bairros diferentes para variedade
     query += " ORDER BY bairro, preco LIMIT %s"
     params.append(limit)
 
@@ -102,28 +103,45 @@ def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
     conn.close()
 
     if not resultados:
-        return "SEM_RESULTADOS"
+        return json.dumps({"tipo": "texto", "conteudo": "SEM_RESULTADOS"})
 
-    resposta = f"🔎 Encontrei {len(resultados)} imóvel(is) para você:\n"
+    imoveis = []
     for r in resultados:
-        bairro_txt = f"{r[2]} — " if r[2] else ""
-        codigo_txt = f" | Ref: {r[12]}" if r[12] else ""
-        resposta += f"""
-🏠 {r[0]} — {r[1]}
-📍 {bairro_txt}{r[3]} - {r[4]}{codigo_txt}
-💰 R$ {float(r[5]):,.2f}
-🛏 {r[6]} quartos | 🚿 {r[7]} banheiros | 🚗 {r[8]} vagas | 📐 {r[9]} m²
-🔑 {r[10]}
-📝 {r[11] or 'Sem descrição'}
-──────────────────────────────
-"""
-    return resposta
+        slug = r[13]
+        imagens = r[14] if r[14] else []
+        foto = imagens[0] if imagens else None
+        link = f"{SITE_URL}/imoveis/{slug}" if slug else None
+
+        imoveis.append({
+            "tipo": r[0],
+            "endereco": r[1],
+            "bairro": r[2] or "",
+            "cidade": r[3],
+            "estado": r[4],
+            "preco": float(r[5]),
+            "quartos": r[6],
+            "banheiros": r[7],
+            "vagas": r[8],
+            "metragem": float(r[9]),
+            "finalidade": r[10],
+            "descricao": r[11] or "",
+            "codigo": r[12] or "",
+            "slug": slug or "",
+            "foto": foto,
+            "link": link,
+        })
+
+    return json.dumps({
+        "tipo": "imoveis",
+        "total": len(imoveis),
+        "imoveis": imoveis
+    }, ensure_ascii=False)
 
 def buscar_similares(cidade_original: str, tipo: str = None,
                      preco_max: float = None, finalidade: str = None) -> str:
     cidades = CIDADES_PROXIMAS.get(cidade_original, [])
     if not cidades:
-        return f"Não encontrei cidades próximas de {cidade_original} no momento."
+        return json.dumps({"tipo": "texto", "conteudo": f"Não encontrei cidades próximas de {cidade_original}."})
 
     conn = get_connection()
     cur = conn.cursor()
@@ -132,7 +150,7 @@ def buscar_similares(cidade_original: str, tipo: str = None,
     query = f"""
         SELECT tipo, endereco, bairro, cidade, estado,
                preco, quartos, banheiros, vagas, metragem,
-               finalidade, descricao, codigo
+               finalidade, descricao, codigo, slug, imagens
         FROM imoveis
         WHERE disponivel = true
         AND LOWER(cidade) IN ({placeholders})
@@ -147,7 +165,7 @@ def buscar_similares(cidade_original: str, tipo: str = None,
         params.append(finalidade)
     if preco_max:
         query += " AND preco <= %s"
-        params.append(preco_max * 1.2)  # 20% de tolerância
+        params.append(preco_max * 1.2)
 
     query += " ORDER BY preco LIMIT 4"
 
@@ -157,23 +175,30 @@ def buscar_similares(cidade_original: str, tipo: str = None,
     conn.close()
 
     if not resultados:
-        return f"Também não encontrei imóveis similares nas cidades próximas de {cidade_original}."
+        return json.dumps({"tipo": "texto", "conteudo": f"Também não encontrei imóveis similares nas cidades próximas de {cidade_original}."})
+
+    imoveis = []
+    for r in resultados:
+        slug = r[13]
+        imagens = r[14] if r[14] else []
+        foto = imagens[0] if imagens else None
+        link = f"{SITE_URL}/imoveis/{slug}" if slug else None
+        imoveis.append({
+            "tipo": r[0], "endereco": r[1], "bairro": r[2] or "",
+            "cidade": r[3], "estado": r[4], "preco": float(r[5]),
+            "quartos": r[6], "banheiros": r[7], "vagas": r[8],
+            "metragem": float(r[9]), "finalidade": r[10],
+            "descricao": r[11] or "", "codigo": r[12] or "",
+            "slug": slug or "", "foto": foto, "link": link,
+        })
 
     cidades_str = ", ".join(cidades)
-    resposta = f"Não encontrei em {cidade_original}, mas encontrei opções próximas ({cidades_str}):\n"
-    for r in resultados:
-        bairro_txt = f"{r[2]} — " if r[2] else ""
-        codigo_txt = f" | Ref: {r[12]}" if r[12] else ""
-        resposta += f"""
-🏠 {r[0]} — {r[1]}
-📍 {bairro_txt}{r[3]} - {r[4]}{codigo_txt}
-💰 R$ {float(r[5]):,.2f}
-🛏 {r[6]} quartos | 🚿 {r[7]} banheiros | 🚗 {r[8]} vagas | 📐 {r[9]} m²
-🔑 {r[10]}
-📝 {r[11] or 'Sem descrição'}
-──────────────────────────────
-"""
-    return resposta
+    return json.dumps({
+        "tipo": "imoveis",
+        "total": len(imoveis),
+        "aviso": f"Não encontrei em {cidade_original}, mas encontrei em cidades próximas ({cidades_str}):",
+        "imoveis": imoveis
+    }, ensure_ascii=False)
 
 def interpretar_busca(texto: str) -> dict:
     t = texto.lower()
