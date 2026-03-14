@@ -212,7 +212,7 @@ def buscar(dados: dict):
 
     try:
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-groq-70b-8192-tool-use-preview",
             messages=mensagens,
             tools=TOOLS,
             tool_choice="auto",
@@ -250,7 +250,7 @@ def buscar(dados: dict):
                 })
 
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama3-groq-70b-8192-tool-use-preview",
                 messages=mensagens,
                 tools=TOOLS,
             )
