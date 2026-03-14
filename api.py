@@ -7,8 +7,11 @@ from tools.broker_info import info_corretores
 from tools.lead_capture import salvar_lead
 from tools.intent_router import detectar_intencao
 from groq import Groq
+from dotenv import load_dotenv
 import os
 import json
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -36,7 +39,7 @@ Quando o usuário pedir imóveis, siga SEMPRE esta ordem antes de buscar:
 3. Se souber cidade e finalidade → use a tool 'buscar_bairros' para ver quais bairros têm imóveis disponíveis
 4. Pergunte se tem preferência de bairro, mostrando as opções disponíveis
 5. Se não souber a FAIXA DE PREÇO → pergunte (ex: "Qual seu orçamento aproximado?")
-6. Com todas as informações → use 'buscar_imoveis' com LIMIT 4
+6. Com todas as informações → use 'buscar_imoveis' com limit=4
 7. Após mostrar os imóveis → pergunte se quer agendar visita ou saber mais
 8. Ao final → capture o lead: "Para te manter informado sobre novidades, posso anotar seu nome e telefone?"
 
@@ -46,7 +49,7 @@ CAPTURA DE LEAD:
 
 REGRAS GERAIS:
 - Máximo 4 imóveis por resposta
-- Se não encontrar resultados → sugira imóveis similares em cidades próximas
+- Se não encontrar resultados → use 'buscar_similares' para sugerir cidades próximas
 - Mantenha contexto da conversa — lembre cidade, bairro, preço discutidos antes
 - Respostas em português brasileiro
 - Use emojis com moderação
@@ -204,7 +207,6 @@ def buscar(dados: dict):
 
     conversas[session_id].append({"role": "user", "content": texto})
 
-    # Limita histórico a 20 mensagens para manter contexto rico
     historico = conversas[session_id][-20:]
     mensagens = [{"role": "system", "content": SYSTEM_PROMPT}] + historico
 
@@ -218,7 +220,6 @@ def buscar(dados: dict):
 
         msg = response.choices[0].message
 
-        # Loop de tool calls (pode chamar múltiplas tools em sequência)
         max_iteracoes = 5
         iteracao = 0
 
@@ -256,14 +257,12 @@ def buscar(dados: dict):
             msg = response.choices[0].message
 
         resposta_final = msg.content or "Não consegui processar sua solicitação."
-
         conversas[session_id].append({"role": "assistant", "content": resposta_final})
 
         return {"resultado": resposta_final}
 
     except Exception as e:
         print(f"Erro na API Groq: {e}")
-        # Fallback
         intencao = detectar_intencao(texto)
         if intencao == "agendar":
             resultado = agendar_visita(texto)
