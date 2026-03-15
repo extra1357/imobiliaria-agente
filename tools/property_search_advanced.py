@@ -66,7 +66,7 @@ def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
     query = """
         SELECT tipo, endereco, bairro, cidade, estado,
                preco, quartos, banheiros, vagas, metragem,
-               finalidade, descricao, codigo, slug, imagens
+               finalidade, descricao, codigo, slug, imagens, id
         FROM imoveis
         WHERE disponivel = true
     """
@@ -108,9 +108,10 @@ def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
     imoveis = []
     for r in resultados:
         slug = r[13]
+        imovel_id = r[15]
         imagens = r[14] if r[14] else []
         foto = imagens[0] if imagens else None
-        link = f"{SITE_URL}/imoveis/{slug}" if slug else None
+        link = f"{SITE_URL}/imoveis/{imovel_id}"
 
         imoveis.append({
             "tipo": r[0],
@@ -150,7 +151,7 @@ def buscar_similares(cidade_original: str, tipo: str = None,
     query = f"""
         SELECT tipo, endereco, bairro, cidade, estado,
                preco, quartos, banheiros, vagas, metragem,
-               finalidade, descricao, codigo, slug, imagens
+               finalidade, descricao, codigo, slug, imagens, id
         FROM imoveis
         WHERE disponivel = true
         AND LOWER(cidade) IN ({placeholders})
@@ -180,9 +181,10 @@ def buscar_similares(cidade_original: str, tipo: str = None,
     imoveis = []
     for r in resultados:
         slug = r[13]
+        imovel_id = r[15]
         imagens = r[14] if r[14] else []
         foto = imagens[0] if imagens else None
-        link = f"{SITE_URL}/imoveis/{slug}" if slug else None
+        link = f"{SITE_URL}/imoveis/{imovel_id}"
         imoveis.append({
             "tipo": r[0], "endereco": r[1], "bairro": r[2] or "",
             "cidade": r[3], "estado": r[4], "preco": float(r[5]),
