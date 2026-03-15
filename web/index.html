@@ -540,11 +540,19 @@ Estou aqui para te ajudar a encontrar o imóvel ideal. Pode me dizer o que procu
       const data = await res.json();
       removeTyping();
 
-      // Verifica se a resposta contém dados estruturados de imóveis
-      if (data.imoveis && data.imoveis.length > 0) {
-        addMsgCards(data.texto_intro || null, data);
+      // Tenta parsear JSON estruturado dentro de resultado
+      let payload = data;
+      if (data.resultado && typeof data.resultado === 'string') {
+        try {
+          const parsed = JSON.parse(data.resultado);
+          if (parsed && parsed.tipo === 'imoveis') payload = parsed;
+        } catch(e) {}
+      }
+
+      if (payload.imoveis && payload.imoveis.length > 0) {
+        addMsgCards(payload.texto_intro || null, payload);
       } else {
-        addMsgTexto(data.resultado || data.texto_intro || 'Desculpe, não consegui processar.', 'sofia');
+        addMsgTexto(data.resultado || 'Desculpe, não consegui processar.', 'sofia');
       }
 
     } catch (err) {

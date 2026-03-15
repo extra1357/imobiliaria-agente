@@ -210,7 +210,7 @@ def buscar(dados: dict):
 
     try:
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-groq-70b-8192-tool-use-preview",
             messages=mensagens,
             tools=TOOLS,
             tool_choice="auto",
@@ -239,17 +239,33 @@ def buscar(dados: dict):
                 ]
             })
 
+            imoveis_encontrados = None
             for tool_call in msg.tool_calls:
                 inputs = json.loads(tool_call.function.arguments)
                 resultado = executar_tool(tool_call.function.name, inputs)
+
+                # Intercepta JSON de imóveis antes de passar pro Groq
+                try:
+                    parsed = json.loads(resultado)
+                    if isinstance(parsed, dict) and parsed.get("tipo") == "imoveis":
+                        imoveis_encontrados = parsed
+                except:
+                    pass
+
                 mensagens.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "content": resultado
                 })
 
+            # Retorna cards direto sem deixar Groq converter para texto
+            if imoveis_encontrados:
+                imoveis_encontrados["texto_intro"] = f"Encontrei {imoveis_encontrados.get('total',0)} imóvel(is) para você! 🏠 Clique no card para ver detalhes completos."
+                conversas[session_id].append({"role": "assistant", "content": imoveis_encontrados["texto_intro"]})
+                return imoveis_encontrados
+
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama3-groq-70b-8192-tool-use-preview",
                 messages=mensagens,
                 tools=TOOLS,
             )
