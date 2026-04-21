@@ -5,32 +5,24 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-errors = []
+from dotenv import load_dotenv
+load_dotenv()
+from groq import Groq
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except Exception as e:
-    errors.append(f"dotenv: {e}")
-
-try:
-    from groq import Groq
-except Exception as e:
-    errors.append(f"groq: {e}")
-
-try:
-    from core.db import get_connection
-except Exception as e:
-    errors.append(f"db: {e}")
-
-try:
-    from tools.property_search_advanced import buscar_imoveis
-except Exception as e:
-    errors.append(f"buscar_imoveis: {e}")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        try:
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": "responda apenas: ok"}]
+            )
+            result = response.choices[0].message.content.strip()
+        except Exception as e:
+            result = f"erro: {e}"
+
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
-        self.wfile.write(json.dumps({"errors": errors, "status": "ok" if not errors else "fail"}).encode())
+        self.wfile.write(json.dumps({"result": result}).encode())
