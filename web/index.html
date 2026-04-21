@@ -386,6 +386,7 @@ Estou aqui para te ajudar a encontrar o imóvel ideal. Pode me dizer o que procu
   const BACKEND = '/buscar';
   const WHATSAPP = '5511976661297';
   const SESSION_ID = 'session_' + Math.random().toString(36).substr(2, 9);
+  const historico = [];
 
   const chat    = document.getElementById('chat');
   const input   = document.getElementById('msg-input');
@@ -520,6 +521,8 @@ Estou aqui para te ajudar a encontrar o imóvel ideal. Pode me dizer o que procu
     if (t) t.remove();
   }
 
+  function getHistorico() { return historico.slice(-10); }
+
   async function enviar() {
     const texto = input.value.trim();
     if (!texto) return;
@@ -529,13 +532,14 @@ Estou aqui para te ajudar a encontrar o imóvel ideal. Pode me dizer o que procu
     btnSend.disabled = true;
 
     addMsgTexto(texto, 'user');
+    historico.push({role: 'user', content: texto});
     addTyping();
 
     try {
       const res = await fetch(BACKEND, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto, session_id: SESSION_ID })
+        body: JSON.stringify({ texto, session_id: SESSION_ID, historico: getHistorico() })
       });
       const data = await res.json();
       removeTyping();
@@ -549,10 +553,14 @@ Estou aqui para te ajudar a encontrar o imóvel ideal. Pode me dizer o que procu
         } catch(e) {}
       }
 
+      if (payload.tipo === 'texto' && payload.conteudo) {
+        historico.push({role: 'assistant', content: payload.conteudo});
+      }
       if (payload.imoveis && payload.imoveis.length > 0) {
+        if (payload.texto_intro) historico.push({role: 'assistant', content: payload.texto_intro});
         addMsgCards(payload.texto_intro || null, payload);
       } else {
-        addMsgTexto(data.conteudo || data.resultado || 'Desculpe, não consegui processar.', 'sofia');
+        addMsgTexto(payload.conteudo || data.conteudo || data.resultado || 'Desculpe, não consegui processar.', 'sofia');
       }
 
     } catch (err) {
