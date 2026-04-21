@@ -51,6 +51,9 @@ def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
         tipo       = filtros.get("tipo") or tipo
         preco_max  = filtros.get("preco_max") or preco_max
 
+    if tipo and not any([cidade, quartos, finalidade, preco_max, bairro]):
+        return json.dumps({"tipo": "texto", "conteudo": "Em qual cidade você procura? Me diga a cidade e posso te mostrar as opções disponíveis! 😊"})
+
     if not any([cidade, quartos, finalidade, tipo, preco_max, bairro]):
         return json.dumps({"tipo": "texto", "conteudo": (
             "Não consegui identificar o que você procura. 😊\n\n"
