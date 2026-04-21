@@ -1,15 +1,1 @@
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "web/index.html",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "web/$1"
-    }
-  ]
-}
+{"version":2,"builds":[{"src":"api.py","use":"@vercel/python"},{"src":"web/index.html","use":"@vercel/static"}],"routes":[{"src":"/buscar","dest":"api.py"},{"src":"/(.*)","dest":"web/$1"}]}
