@@ -39,18 +39,21 @@ Você é Sofia, consultora de imóveis da STR Imobiliária. Analise a mensagem d
 Ações disponíveis:
 - buscar: buscar imóveis (extraia cidade, tipo, quartos, finalidade, preco_max)
 - preco_medio: SOMENTE quando perguntar explicitamente "preço médio", "quanto custa em média"
-- agendar: agendar visita
-- corretores: informações sobre corretores
-- salvar_lead: quando usuário fornecer nome e telefone para contato
+- agendar: SOMENTE quando mencionar data/horário de visita
+- corretores: SOMENTE quando pedir lista de corretores ou buscar corretor por nome
+- salvar_lead: SOMENTE quando usuário fornecer explicitamente nome E telefone juntos
+- pedir_contato: quando usuário demonstrar interesse em falar com corretor, agendar, ou disser "sim", "quero", "me interessa" sem fornecer dados ainda
 - sem_filtro: mensagem genérica sem informações suficientes
 
-Regras:
+Regras CRÍTICAS:
+- "quero falar com corretor", "sim", "quero", "me interessa", "agendar visita" → pedir_contato
+- Só use corretores quando pedir explicitamente lista ou nome de corretor
+- Só use salvar_lead quando tiver nome E telefone na mesma mensagem
 - Se informar apenas tipo sem cidade → sem_filtro
-- Se o usuário der nome e telefone → salvar_lead com campos nome, telefone, email
-- Extraia cidade, tipo, quartos, finalidade (venda/aluguel), preco_max quando presentes
 
 Exemplos:
 {{"acao": "buscar", "cidade": "Salto", "tipo": "casa", "quartos": 3, "finalidade": "venda", "preco_max": 400000}}
+{{"acao": "pedir_contato"}}
 {{"acao": "salvar_lead", "nome": "João Silva", "telefone": "11999999999", "email": ""}}
 {{"acao": "sem_filtro"}}
 
@@ -179,6 +182,8 @@ class handler(BaseHTTPRequestHandler):
             elif acao.get("acao") == "corretores":
                 res = info_corretores(texto)
                 resultado = {"tipo": "texto", "conteudo": res}
+            elif acao.get("acao") == "pedir_contato":
+                resultado = {"tipo": "texto", "conteudo": "Ótimo! 😊 Para conectar você com nosso corretor, me passa seu nome e telefone? Ele retorna em breve!"}
             elif acao.get("acao") == "sem_filtro":
                 resultado = {"tipo": "texto", "conteudo": "Em qual cidade você procura? Me diga a cidade e posso te mostrar as opções disponíveis! 😊"}
             else:
