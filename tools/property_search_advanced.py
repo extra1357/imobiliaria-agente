@@ -103,7 +103,7 @@ def buscar_imoveis(cidade=None, bairro=None, tipo=None, quartos=None,
     conn.close()
 
     if not resultados:
-        return json.dumps({"tipo": "texto", "conteudo": "SEM_RESULTADOS"})
+        return json.dumps({"tipo": "texto", "conteudo": "No momento ainda não temos nenhum imóvel nessa cidade. 😊"})
 
     imoveis = []
     for r in resultados:
