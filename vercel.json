@@ -1,1 +1,1 @@
-{"version":2,"builds":[{"src":"api_test.py","use":"@vercel/python"},{"src":"web/index.html","use":"@vercel/static"}],"routes":[{"src":"/test","dest":"api_test.py"},{"src":"/buscar","dest":"api.py"},{"src":"/(.*)","dest":"web/$1"}]}
+{"version":2,"builds":[{"src":"api/buscar.py","use":"@vercel/python"},{"src":"web/index.html","use":"@vercel/static"}],"routes":[{"src":"/buscar","dest":"api/buscar.py"},{"src":"/(.*)","dest":"web/$1"}]}
