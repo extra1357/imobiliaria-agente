@@ -552,7 +552,7 @@ Estou aqui para te ajudar a encontrar o imóvel ideal. Pode me dizer o que procu
       if (payload.imoveis && payload.imoveis.length > 0) {
         addMsgCards(payload.texto_intro || null, payload);
       } else {
-        addMsgTexto(data.resultado || 'Desculpe, não consegui processar.', 'sofia');
+        addMsgTexto(data.conteudo || data.resultado || 'Desculpe, não consegui processar.', 'sofia');
       }
 
     } catch (err) {
