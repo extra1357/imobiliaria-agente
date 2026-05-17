@@ -93,16 +93,17 @@ def _extrair_perfil(historico: list, texto_atual: str) -> dict:
         m["content"] for m in historico if m["role"] == "user"
     ) + " " + texto_atual
 
-    # Cidade
-    cidades = ["são paulo", "campinas", "salto", "sorocaba", "itu", "indaiatuba", "mairinque", "bauru"]
-    for c in cidades:
-        if c in todo_texto.lower():
+    # Cidade e tipo dinamicos do banco
+    from tools.property_search_advanced import _cidades_do_banco, _tipos_do_banco
+    t = todo_texto.lower()
+    cidades = _cidades_do_banco()
+    for c in sorted(cidades, key=len, reverse=True):
+        if c in t:
             perfil["cidade"] = c.title()
             break
-
-    # Tipo
-    for tp in ["apartamento", "casa", "sobrado", "terreno", "comercial"]:
-        if tp in todo_texto.lower():
+    tipos = _tipos_do_banco()
+    for tp in sorted(tipos, key=len, reverse=True):
+        if tp in t:
             perfil["tipo"] = tp
             break
 
