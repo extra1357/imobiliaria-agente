@@ -21,9 +21,16 @@ def salvar_lead(nome: str, telefone: str, email: str = None,
                           "corretorId", "dataCaptcha", "createdAt", "updatedAt")
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
-        lead_id, nome, email, telefone, "sofia_chat", "novo",
-        imovel_interesse, data_preferencia, mensagem,
-        corretor_id, now, now, now
+        lead_id,
+        nome[:100],
+        email or "",
+        telefone,
+        "sofia_chat", "novo",
+        imovel_interesse,
+        data_preferencia,
+        mensagem,
+        corretor_id,
+        now, now, now
     ))
     conn.commit()
     cur.close()

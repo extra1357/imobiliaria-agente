@@ -124,7 +124,7 @@ def _extrair_perfil(historico: list, texto_atual: str) -> dict:
         perfil["preco_max"] = int(val * 1000) if m.group(2) in ["mil", "k"] else int(val * 1_000_000)
 
     # Nome
-    m = re.search(r"(?:me chamo|meu nome[eé ]+|sou o|sou a)\s+([A-ZÀ-Ú][a-zà-ú]+(?: [A-ZÀ-Ú][a-zà-ú]+)*)", todo_texto, re.I)
+    m = re.search(r"(?:me chamo|meu nome[eé ]+|sou o|sou a)\s+([A-ZÀ-Ú][a-zà-ú]+(?:\s[A-ZÀ-Ú][a-zà-ú]+){0,3})", todo_texto, re.I)
     if m:
         perfil["nome"] = m.group(1)
 
