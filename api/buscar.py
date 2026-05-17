@@ -10,224 +10,204 @@ load_dotenv()
 
 from groq import Groq
 from core.memory import get_session, update_session
-from tools.intent_router import rotear_intencao
-from tools.property_search_advanced import buscar_imoveis, buscar_similares
+from tools.property_search_advanced import buscar_imoveis, buscar_similares, interpretar_busca
 from tools.lead_capture import salvar_lead
 from tools.broker_info import info_corretores
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
-SYSTEM_PROMPT = """
-Você é Sofia, consultora imobiliária virtual da Imobiliária Perto.
-Seu objetivo é ajudar clientes a encontrar o imóvel ideal com uma conversa natural e calorosa.
+def _carregar_contexto_db(perfil: dict) -> str:
+    """Busca imóveis e corretores do banco e formata para o prompt."""
+    contexto = ""
 
-REGRAS DE OURO:
-1. NUNCA busque imóveis sem saber ao menos a cidade desejada.
-2. Ao apresentar imóveis, descreva-os de forma envolvente e humana — nunca como lista técnica.
-3. Se não houver imóveis, ofereça similares ou capture o contato para avisar quando disponível.
-4. SEMPRE que não houver imóveis, peça nome e telefone para entrar em contato.
-5. Colete nome e telefone um de cada vez, de forma natural.
-6. Mantenha foco imobiliário. Redirecione gentilmente assuntos fora do escopo.
+    # Corretores disponíveis
+    try:
+        corretores_raw = json.loads(info_corretores())
+        corretores = corretores_raw.get("corretores", [])
+        if corretores:
+            linhas = [f"- {c['nome']} | CRECI: {c['creci']} | Tel: {c['telefone']}" for c in corretores]
+            contexto += "CORRETORES DISPONÍVEIS:\n" + "\n".join(linhas) + "\n\n"
+    except Exception as e:
+        contexto += f"(erro ao carregar corretores: {e})\n\n"
 
-TOM DE VOZ:
-- Caloroso, entusiasmado, profissional.
-- Mensagens curtas, no máximo 3 parágrafos.
-- Termine sempre com uma pergunta ou próximo passo claro.
-"""
+    # Imóveis do banco
+    cidade    = perfil.get("cidade")
+    tipo      = perfil.get("tipo")
+    quartos   = perfil.get("quartos")
+    preco_max = perfil.get("preco_max")
+    finalidade = perfil.get("finalidade")
 
-def chamar_llm(msgs: list) -> str:
-    completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=msgs,
-        temperature=0.7,
-        max_tokens=600,
-    )
-    return completion.choices[0].message.content.strip()
+    if cidade or tipo or quartos or preco_max:
+        try:
+            resultado = json.loads(buscar_imoveis(
+                cidade=cidade, tipo=tipo, quartos=quartos,
+                preco_max=preco_max, finalidade=finalidade, limit=5
+            ))
 
+            if resultado.get("tipo") == "imoveis" and resultado.get("imoveis"):
+                imoveis = resultado["imoveis"]
+                linhas = []
+                for im in imoveis:
+                    preco = f"R$ {im['preco']:,.0f}".replace(",", ".")
+                    linhas.append(
+                        f"• {im['tipo'].title()} em {im['bairro'] or im['cidade']} | "
+                        f"{im['quartos']}q {im['banheiros']}bh {im['vagas']}vg | "
+                        f"{im['metragem']:.0f}m² | {preco} | "
+                        f"Link: {im['link']}"
+                    )
+                contexto += f"IMÓVEIS ENCONTRADOS ({len(imoveis)}):\n" + "\n".join(linhas) + "\n\n"
+
+            else:
+                # Tenta similares
+                if cidade:
+                    sim = json.loads(buscar_similares(cidade, tipo, preco_max, finalidade))
+                    if sim.get("tipo") == "imoveis" and sim.get("imoveis"):
+                        imoveis = sim["imoveis"]
+                        linhas = []
+                        for im in imoveis:
+                            preco = f"R$ {im['preco']:,.0f}".replace(",", ".")
+                            linhas.append(
+                                f"• {im['tipo'].title()} em {im['bairro'] or im['cidade']} | "
+                                f"{im['quartos']}q | {im['metragem']:.0f}m² | {preco} | "
+                                f"Link: {im['link']}"
+                            )
+                        aviso = sim.get("aviso", "Imóveis em cidades próximas:")
+                        contexto += f"IMÓVEIS PRÓXIMOS ({aviso}):\n" + "\n".join(linhas) + "\n\n"
+                    else:
+                        contexto += "IMÓVEIS: Nenhum encontrado na cidade ou arredores.\n\n"
+                else:
+                    contexto += "IMÓVEIS: Cidade não informada ainda.\n\n"
+        except Exception as e:
+            contexto += f"(erro ao buscar imóveis: {e})\n\n"
+    else:
+        contexto += "IMÓVEIS: Aguardando cliente informar cidade/tipo/quartos.\n\n"
+
+    return contexto
+
+def _extrair_perfil(historico: list, texto_atual: str) -> dict:
+    """Extrai perfil acumulado do cliente a partir do histórico."""
+    import re
+    perfil = {}
+    todo_texto = " ".join(
+        m["content"] for m in historico if m["role"] == "user"
+    ) + " " + texto_atual
+
+    # Cidade
+    cidades = ["são paulo", "campinas", "salto", "sorocaba", "itu", "indaiatuba", "mairinque", "bauru"]
+    for c in cidades:
+        if c in todo_texto.lower():
+            perfil["cidade"] = c.title()
+            break
+
+    # Tipo
+    for tp in ["apartamento", "casa", "sobrado", "terreno", "comercial"]:
+        if tp in todo_texto.lower():
+            perfil["tipo"] = tp
+            break
+
+    # Finalidade
+    if any(p in todo_texto.lower() for p in ["aluguel", "alugar", "locação"]):
+        perfil["finalidade"] = "aluguel"
+    elif any(p in todo_texto.lower() for p in ["comprar", "compra", "venda"]):
+        perfil["finalidade"] = "venda"
+
+    # Quartos
+    m = re.search(r"(\d+)\s*quarto", todo_texto.lower())
+    if m:
+        perfil["quartos"] = int(m.group(1))
+
+    # Preço
+    m = re.search(r"(\d+[\.,]?\d*)\s*(mil|k|milhão|milhao)", todo_texto.lower())
+    if m:
+        val = float(m.group(1).replace(",", "."))
+        perfil["preco_max"] = int(val * 1000) if m.group(2) in ["mil", "k"] else int(val * 1_000_000)
+
+    # Nome
+    m = re.search(r"(?:me chamo|meu nome[eé ]+|sou o|sou a)\s+([A-ZÀ-Ú][a-zà-ú]+(?: [A-ZÀ-Ú][a-zà-ú]+)*)", todo_texto, re.I)
+    if m:
+        perfil["nome"] = m.group(1)
+
+    # Telefone
+    m = re.search(r"(\(?\d{2}\)?\s?\d{4,5}[-\s]?\d{4})", todo_texto)
+    if m:
+        perfil["telefone"] = m.group(1)
+
+    return perfil
+
+def _tentar_salvar_lead(perfil: dict, sessao: dict) -> str | None:
+    """Salva lead se tiver nome + telefone e ainda não salvou."""
+    if sessao.get("lead_salvo"):
+        return None
+    nome = perfil.get("nome") or sessao.get("perfil", {}).get("nome")
+    telefone = perfil.get("telefone") or sessao.get("perfil", {}).get("telefone")
+    if nome and telefone:
+        imovel = perfil.get("tipo", "") + " em " + perfil.get("cidade", "")
+        salvar_lead(
+            nome=nome,
+            telefone=telefone,
+            imovel_interesse=imovel.strip(" em ") or None,
+            mensagem=f"Lead capturado via Sofia Chat"
+        )
+        return "lead_salvo"
+    return None
 
 def orquestrar(texto: str, session_id: str) -> dict:
-    session = get_session(session_id)
-    perfil = session.get("perfil", {})
-    historico = session.get("historico", [])
+    sessao = get_session(session_id)
+    historico = sessao.get("historico", [])
 
-    perfil = _atualizar_perfil(perfil, texto)
-    intencao = rotear_intencao(texto)
+    # Extrai perfil acumulado
+    perfil = _extrair_perfil(historico, texto)
 
-    # ── Contexto base ────────────────────────────────────────────────────────
-    msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
-    if perfil:
-        msgs.append({"role": "system", "content": f"Perfil do cliente: {json.dumps(perfil, ensure_ascii=False)}"})
-    for msg in historico[-8:]:
-        msgs.append(msg)
+    # Mescla com perfil anterior da sessão
+    perfil_anterior = sessao.get("perfil", {})
+    perfil_merged = {**perfil_anterior, **{k: v for k, v in perfil.items() if v}}
 
-    # ── Intenção: buscar imóveis ──────────────────────────────────────────────
-    if intencao == "buscar_imoveis":
-        cidade = perfil.get("cidade") or _extrair_cidade(texto)
+    # Salva lead se possível
+    salvou = _tentar_salvar_lead(perfil_merged, sessao)
 
-        if not cidade:
-            msgs.append({"role": "user", "content": texto})
-            msgs.append({"role": "system", "content": "O cliente não informou a cidade. Pergunte de forma calorosa em qual cidade está procurando."})
-            resposta = chamar_llm(msgs)
-            _salvar(session, historico, texto, resposta, session_id)
-            return {"mensagem_sofia": resposta}
+    # Carrega contexto real do banco
+    contexto_db = _carregar_contexto_db(perfil_merged)
 
-        perfil["cidade"] = cidade
-        session["perfil"] = perfil
+    SYSTEM_PROMPT = f"""Você é Sofia, consultora imobiliária virtual da Imobiliária Perto.
+Seu objetivo é ajudar clientes a encontrar o imóvel ideal com uma conversa natural e calorosa.
 
-        resultado_raw = buscar_imoveis(
-            cidade=cidade,
-            tipo=perfil.get("tipo") or _extrair_tipo(texto),
-            quartos=perfil.get("quartos"),
-            preco_max=perfil.get("preco_max"),
-            texto=texto,
-        )
+DADOS REAIS DO BANCO (use SEMPRE esses dados nas respostas):
+{contexto_db}
 
-        try:
-            resultado = json.loads(resultado_raw)
-        except Exception:
-            resultado = {"tipo": "texto", "conteudo": resultado_raw}
+REGRAS:
+1. Use APENAS os imóveis listados acima — nunca invente imóveis.
+2. Se houver imóveis, descreva-os de forma envolvente mencionando bairro, quartos, metragem e preço.
+3. Sempre inclua o link do imóvel quando apresentar.
+4. Se não houver imóveis, peça nome e telefone para avisar quando disponível.
+5. Indique um corretor pelo nome quando o cliente quiser mais informações ou visita.
+6. Colete nome e telefone um de cada vez, de forma natural.
+7. Mantenha foco imobiliário. Mensagens curtas, máximo 3 parágrafos.
+8. Termine sempre com uma pergunta ou próximo passo claro.
 
-        if resultado.get("tipo") == "imoveis" and resultado.get("total", 0) > 0:
-            imoveis = resultado["imoveis"]
-            descricao = _formatar_imoveis(imoveis)
-            msgs.append({"role": "system", "content": f"Imóveis encontrados:\n{descricao}"})
-            msgs.append({"role": "user", "content": texto})
-            msgs.append({"role": "system", "content": (
-                "Apresente os imóveis de forma envolvente e natural. "
-                "Destaque os pontos mais atrativos de cada um. "
-                "Pergunte qual deles despertou mais interesse ou se quer agendar uma visita."
-            )})
-        else:
-            # Tenta similares
-            similares_raw = buscar_similares(cidade_original=cidade, tipo=perfil.get("tipo"))
-            try:
-                similares = json.loads(similares_raw)
-            except Exception:
-                similares = {}
+PERFIL DO CLIENTE ATÉ AGORA: {json.dumps(perfil_merged, ensure_ascii=False)}"""
 
-            if similares.get("tipo") == "imoveis" and similares.get("total", 0) > 0:
-                descricao = _formatar_imoveis(similares["imoveis"])
-                msgs.append({"role": "system", "content": f"Não há exatamente o que o cliente pediu, mas há similares:\n{descricao}"})
-                msgs.append({"role": "user", "content": texto})
-                msgs.append({"role": "system", "content": (
-                    "Explique com empatia que não há imóveis exatamente como pedido, "
-                    "mas apresente os similares de forma entusiasmada. "
-                    "Pergunte se algum desperta interesse."
-                )})
-            else:
-                msgs.append({"role": "user", "content": texto})
-                msgs.append({"role": "system", "content": (
-                    "Não há imóveis disponíveis com essas características no momento. "
-                    "Explique com empatia. "
-                    f"{'Peça o nome do cliente.' if not perfil.get('nome') else 'Peça o telefone para avisar quando surgir algo.' if not perfil.get('telefone') else 'Confirme que vai entrar em contato assim que surgir algo.'}"
-                )})
+    historico.append({"role": "user", "content": texto})
 
-    # ── Intenção: agendar visita ──────────────────────────────────────────────
-    elif intencao == "agendar_visita":
-        nome = perfil.get("nome")
-        telefone = perfil.get("telefone")
-        data_visita = perfil.get("data_visita")
+    completion = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        max_tokens=600,
+        temperature=0.7,
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}] + historico[-10:]
+    )
 
-        if not nome:
-            msgs.append({"role": "user", "content": texto})
-            msgs.append({"role": "system", "content": "Cliente quer agendar visita. Peça o nome completo de forma calorosa."})
-        elif not telefone:
-            msgs.append({"role": "user", "content": texto})
-            msgs.append({"role": "system", "content": f"Cliente se chama {nome}. Peça o telefone para contato."})
-        elif not data_visita:
-            msgs.append({"role": "user", "content": texto})
-            msgs.append({"role": "system", "content": f"Temos nome e telefone. Peça a data preferida para a visita."})
-        else:
-            salvar_lead(nome=nome, telefone=telefone, interesse="agendamento", cidade=perfil.get("cidade",""))
-            msgs.append({"role": "user", "content": texto})
-            msgs.append({"role": "system", "content": f"Confirme o agendamento para {nome} no dia {data_visita}. Seja entusiasmado e profissional."})
+    resposta = completion.choices[0].message.content.strip()
+    historico.append({"role": "assistant", "content": resposta})
 
-    # ── Intenção: corretores ──────────────────────────────────────────────────
-    elif intencao == "corretores":
-        try:
-            corretores = info_corretores()
-            msgs.append({"role": "system", "content": f"Corretores disponíveis: {json.dumps(corretores, ensure_ascii=False)}"})
-        except Exception:
-            pass
-        msgs.append({"role": "user", "content": texto})
+    # Atualiza sessão
+    novo_estado = {
+        "historico": historico[-12:],
+        "perfil": perfil_merged,
+        "lead_salvo": salvou == "lead_salvo" or sessao.get("lead_salvo", False)
+    }
+    update_session(session_id, novo_estado)
 
-    # ── Captura de lead ───────────────────────────────────────────────────────
-    elif intencao == "capturar_lead":
-        if perfil.get("nome") and perfil.get("telefone"):
-            try:
-                salvar_lead(nome=perfil["nome"], telefone=perfil["telefone"],
-                            interesse=texto, cidade=perfil.get("cidade",""))
-            except Exception:
-                pass
-        msgs.append({"role": "user", "content": texto})
-
-    # ── Fallback ──────────────────────────────────────────────────────────────
-    else:
-        msgs.append({"role": "user", "content": texto})
-
-    session["perfil"] = perfil
-    resposta = chamar_llm(msgs)
-    _salvar(session, historico, texto, resposta, session_id)
     return {"mensagem_sofia": resposta}
-
-
-def _formatar_imoveis(imoveis: list) -> str:
-    linhas = []
-    for i, im in enumerate(imoveis, 1):
-        preco = f"R$ {im['preco']:,.0f}".replace(",", ".")
-        linhas.append(
-            f"{i}. {im['tipo'].title()} em {im['bairro'] or im['cidade']} — "
-            f"{im['quartos']} quartos, {im.get('metragem',0):.0f}m², {preco}. "
-            f"{im.get('descricao','')[:120]}. Link: {im.get('link','')}"
-        )
-    return "\n".join(linhas)
-
-
-def _salvar(session, historico, texto, resposta, session_id):
-    historico.extend([{"role": "user", "content": texto}, {"role": "assistant", "content": resposta}])
-    session["historico"] = historico[-20:]
-    update_session(session_id, session)
-
-
-def _extrair_cidade(texto):
-    cidades = ["são paulo","campinas","santos","sorocaba","ribeirão preto",
-               "são bernardo","guarulhos","osasco","bauru","jundiaí",
-               "salto","itu","indaiatuba"]
-    t = texto.lower()
-    for c in cidades:
-        if c in t: return c.title()
-    return None
-
-
-def _extrair_tipo(texto):
-    tipos = {"apartamento":"apartamento","apto":"apartamento","casa":"casa",
-             "kitnet":"kitnet","comercial":"comercial","sala":"comercial","terreno":"terreno"}
-    t = texto.lower()
-    for k, v in tipos.items():
-        if k in t: return v
-    return None
-
-
-def _atualizar_perfil(perfil, texto):
-    import re
-    tel = re.search(r"\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4}", texto)
-    if tel: perfil["telefone"] = tel.group()
-    data = re.search(r"\d{1,2}/\d{1,2}(?:/\d{2,4})?", texto)
-    if data: perfil["data_visita"] = data.group()
-    q = re.search(r"(\d)\s*quarto", texto, re.I)
-    if q: perfil["quartos"] = int(q.group(1))
-    preco = re.search(r"(?:até|ate|por)\s*R?\$?\s*([\d\.]+)\s*(?:mil)?", texto, re.I)
-    if preco:
-        val = float(preco.group(1).replace(".", ""))
-        perfil["preco_max"] = val * 1000 if val < 10000 else val
-    cidade = _extrair_cidade(texto)
-    if cidade: perfil["cidade"] = cidade
-    tipo = _extrair_tipo(texto)
-    if tipo: perfil["tipo"] = tipo
-    nm = re.search(r"(?:me chamo|meu nome[eé ]+|sou o|sou a)\s+([A-ZÀ-Ú][a-zà-ú]+(?: [A-ZÀ-Ú][a-zà-ú]+)*)", texto, re.I)
-    if nm: perfil["nome"] = nm.group(1)
-    return perfil
 
 
 class handler(BaseHTTPRequestHandler):

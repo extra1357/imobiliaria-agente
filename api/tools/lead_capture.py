@@ -1,42 +1,31 @@
-from core.db import get_connection
+import json
+import os
+import sys
+import uuid
 from datetime import datetime
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.db import get_connection
 
-def salvar_lead(nome: str, telefone: str, email: str = None, interesse: str = None) -> str:
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-
-        # Verifica se lead já existe pelo telefone
-        cur.execute("SELECT id FROM leads WHERE telefone = %s", (telefone,))
-        existente = cur.fetchone()
-
-        if existente:
-            # Atualiza interesse se já cadastrado
-            cur.execute("""
-                UPDATE leads SET
-                    imovelInteresse = %s,
-                    updatedAt = %s
-                WHERE telefone = %s
-            """, (interesse, datetime.now(), telefone))
-            conn.commit()
-            cur.close()
-            conn.close()
-            return f"LEAD_ATUALIZADO:{nome}"
-
-        # Email padrão se não fornecido
-        email_final = email or f"{telefone.replace(' ', '')}@sem-email.com"
-
-        cur.execute("""
-            INSERT INTO leads (id, nome, email, telefone, origem, status,
-                               imovelInteresse, createdAt, updatedAt, dataCaptcha)
-            VALUES (gen_random_uuid(), %s, %s, %s, 'sofia-ia', 'novo', %s,
-                    NOW(), NOW(), NOW())
-        """, (nome, email_final, telefone, interesse))
-
-        conn.commit()
-        cur.close()
-        conn.close()
-        return f"LEAD_SALVO:{nome}"
-
-    except Exception as e:
-        return f"ERRO_LEAD:{str(e)}"
+def salvar_lead(nome: str, telefone: str, email: str = None,
+                imovel_interesse: str = None, data_preferencia: str = None,
+                mensagem: str = None, corretor_id: str = None) -> str:
+    if not nome or not telefone:
+        return json.dumps({"sucesso": False, "erro": "Nome e telefone obrigatórios."})
+    conn = get_connection()
+    cur = conn.cursor()
+    lead_id = str(uuid.uuid4())
+    now = datetime.utcnow()
+    cur.execute("""
+        INSERT INTO leads (id, nome, email, telefone, origem, status,
+                          "imovelInteresse", "dataPreferencia", mensagem,
+                          "corretorId", "dataCaptcha", "createdAt", "updatedAt")
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        lead_id, nome, email, telefone, "sofia_chat", "novo",
+        imovel_interesse, data_preferencia, mensagem,
+        corretor_id, now, now, now
+    ))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return json.dumps({"sucesso": True, "lead_id": lead_id}, ensure_ascii=False)
