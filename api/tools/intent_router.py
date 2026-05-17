@@ -18,3 +18,14 @@ def detectar_intencao(texto: str) -> str:
         return "buscar"
 
     return "buscar"
+
+# alias para compatibilidade com buscar.py
+def rotear_intencao(texto: str) -> str:
+    intencao = detectar_intencao(texto)
+    mapa = {
+        "buscar": "buscar_imoveis",
+        "agendar": "agendar_visita",
+        "preco_medio": "buscar_imoveis",
+        "corretores": "corretores",
+    }
+    return mapa.get(intencao, "buscar_imoveis")
