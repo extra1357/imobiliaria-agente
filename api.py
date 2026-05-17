@@ -9,87 +9,226 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from groq import Groq
+from core.memory import get_session, update_session
+from tools.intent_router import rotear_intencao
 from tools.property_search_advanced import buscar_imoveis
-from tools.price_analysis import preco_medio_cidade
-from tools.schedule_visit import agendar_visita
+from tools.schedule_visit import listar_imoveis_para_visita, confirmar_agendamento
+from tools.lead_capture import salvar_lead
 from tools.broker_info import info_corretores
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=GROQ_API_KEY)
 
-def decidir_acao(texto: str) -> dict:
-    prompt = f"""
-Você é um assistente de imóveis. Analise a mensagem do usuário e retorne APENAS um JSON com a ação e os parâmetros extraídos.
+SYSTEM_PROMPT = """
+Você é Sofia, assistente virtual da Imobiliária Perto.
+Seu objetivo é ajudar clientes a encontrar o imóvel ideal, qualificar o interesse
+e agendar visitas — sempre de forma simpática, objetiva e humana.
 
-Ações disponíveis:
-- buscar: buscar imóveis (extraia cidade, tipo, quartos, finalidade, preco_max)
-- preco_medio: preço médio em uma cidade
-- agendar: agendar visita
-- corretores: informações sobre corretores
-- sem_filtro: mensagem muito genérica sem informações suficientes
+REGRAS DE OURO (Guard Rails):
+1. NUNCA busque imóveis sem saber ao menos a cidade desejada.
+   → Se faltar a cidade, pergunte antes de qualquer busca.
+2. NUNCA confirme um agendamento sem coletar: nome completo, telefone e data preferida.
+   → Colete um dado por vez, de forma natural.
+3. NUNCA invente imóveis, preços ou informações que não estejam nos dados retornados.
+4. Se não souber algo, diga "Vou verificar isso para você" e oriente o cliente.
+5. Mantenha o foco imobiliário. Para assuntos fora do escopo, redirecione gentilmente.
 
-Regras:
-- Se o usuário não informar cidade nem tipo nem quartos nem finalidade nem preço, use "sem_filtro"
-- Se informar apenas tipo sem cidade, use "sem_filtro"
-- Extraia cidade, tipo de imóvel, quartos, finalidade (venda/aluguel), preco_max quando presentes
+TOM DE VOZ:
+- Caloroso, profissional, direto ao ponto.
+- Use "você" (nunca "tu" ou "senhor/senhora" a menos que o cliente use).
+- Mensagens curtas, máximo 3 parágrafos por resposta.
+- Termine com uma pergunta ou próximo passo claro.
 
-Retorne APENAS JSON, exemplo:
-{{"acao": "buscar", "cidade": "Salto", "tipo": "casa", "quartos": 3, "finalidade": "venda", "preco_max": 400000}}
-
-Mensagem: {texto}
+ESCOPO:
+- Busca de imóveis por cidade, tipo, faixa de preço, quartos.
+- Informações sobre imóveis listados.
+- Agendamento de visitas.
+- Informações sobre corretores.
+- Captação de leads interessados.
 """
-    response = client.chat.completions.create(
+
+def orquestrar(texto: str, session_id: str) -> dict:
+    session = get_session(session_id)
+    perfil = session.get("perfil", {})
+    historico = session.get("historico", [])
+
+    intencao = rotear_intencao(texto)
+    dados_extras = ""
+    imoveis = []
+    imoveis_agenda = []
+
+    if intencao == "buscar_imoveis":
+        cidade = perfil.get("cidade") or _extrair_cidade(texto)
+        if not cidade:
+            resposta_sofia = (
+                "Para encontrar os melhores imóveis para você, preciso saber: "
+                "em qual cidade você está procurando? 🏙️"
+            )
+            _atualizar_historico(session, historico, texto, resposta_sofia, session_id)
+            return {"mensagem_sofia": resposta_sofia, "imoveis": []}
+
+        perfil["cidade"] = cidade
+        tipo = perfil.get("tipo") or _extrair_tipo(texto)
+        preco_max = perfil.get("preco_max")
+        quartos = perfil.get("quartos")
+
+        imoveis = buscar_imoveis(cidade=cidade, tipo=tipo, preco_max=preco_max, quartos=quartos)
+        dados_extras = f"Imóveis encontrados:\n{json.dumps(imoveis, ensure_ascii=False, indent=2)}"
+
+    elif intencao == "agendar_visita":
+        imoveis_agenda = listar_imoveis_para_visita()
+        dados_extras = f"Imóveis disponíveis para visita:\n{json.dumps(imoveis_agenda, ensure_ascii=False, indent=2)}"
+
+        nome = perfil.get("nome")
+        telefone = perfil.get("telefone")
+        data_visita = perfil.get("data_visita")
+
+        if not nome:
+            resposta_sofia = "Ótimo! Para agendar a visita, preciso do seu nome completo. Como posso chamar você? 😊"
+            _atualizar_historico(session, historico, texto, resposta_sofia, session_id)
+            return {"mensagem_sofia": resposta_sofia, "imoveis": imoveis_agenda}
+
+        if not telefone:
+            resposta_sofia = f"Perfeito, {nome}! Qual é o melhor número de telefone para contato? 📱"
+            _atualizar_historico(session, historico, texto, resposta_sofia, session_id)
+            return {"mensagem_sofia": resposta_sofia, "imoveis": imoveis_agenda}
+
+        if not data_visita:
+            resposta_sofia = "Que data você prefere para a visita? (ex: próxima terça-feira, 25/06) 📅"
+            _atualizar_historico(session, historico, texto, resposta_sofia, session_id)
+            return {"mensagem_sofia": resposta_sofia, "imoveis": imoveis_agenda}
+
+        confirmacao = confirmar_agendamento(nome=nome, telefone=telefone, data=data_visita)
+        dados_extras = f"Resultado do agendamento: {confirmacao}"
+
+    elif intencao == "corretores":
+        corretores = info_corretores()
+        dados_extras = f"Corretores disponíveis:\n{json.dumps(corretores, ensure_ascii=False, indent=2)}"
+
+    elif intencao == "capturar_lead":
+        salvar_lead(
+            nome=perfil.get("nome", ""),
+            telefone=perfil.get("telefone", ""),
+            interesse=texto,
+            cidade=perfil.get("cidade", ""),
+        )
+
+    perfil = _atualizar_perfil(perfil, texto)
+    session["perfil"] = perfil
+
+    mensagens_llm = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    if perfil:
+        mensagens_llm.append({
+            "role": "system",
+            "content": f"Perfil coletado até agora: {json.dumps(perfil, ensure_ascii=False)}",
+        })
+
+    if dados_extras:
+        mensagens_llm.append({"role": "system", "content": dados_extras})
+
+    for msg in historico[-8:]:
+        mensagens_llm.append(msg)
+
+    mensagens_llm.append({"role": "user", "content": texto})
+
+    completion = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]
+        messages=mensagens_llm,
+        temperature=0.7,
+        max_tokens=600,
     )
-    text = response.choices[0].message.content.strip()
-    text = text.replace("```json", "").replace("```", "").strip()
-    try:
-        return json.loads(text)
-    except:
-        return {"acao": "sem_filtro"}
+    resposta_sofia = completion.choices[0].message.content.strip()
+
+    _atualizar_historico(session, historico, texto, resposta_sofia, session_id)
+
+    imoveis_retorno = imoveis if intencao == "buscar_imoveis" else imoveis_agenda
+    return {"mensagem_sofia": resposta_sofia, "imoveis": imoveis_retorno}
+
+
+def _atualizar_historico(session, historico, texto_user, resposta, session_id):
+    historico.append({"role": "user", "content": texto_user})
+    historico.append({"role": "assistant", "content": resposta})
+    session["historico"] = historico[-20:]
+    update_session(session_id, session)
+
+
+def _extrair_cidade(texto):
+    cidades = [
+        "são paulo", "campinas", "santos", "sorocaba", "ribeirão preto",
+        "são bernardo", "guarulhos", "osasco", "bauru", "jundiaí",
+    ]
+    t = texto.lower()
+    for cidade in cidades:
+        if cidade in t:
+            return cidade.title()
+    return None
+
+
+def _extrair_tipo(texto):
+    tipos = {
+        "apartamento": "apartamento", "apto": "apartamento",
+        "casa": "casa", "kitnet": "kitnet",
+        "comercial": "comercial", "sala": "comercial",
+        "terreno": "terreno",
+    }
+    t = texto.lower()
+    for key, val in tipos.items():
+        if key in t:
+            return val
+    return None
+
+
+def _atualizar_perfil(perfil, texto):
+    import re
+    tel = re.search(r"\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4}", texto)
+    if tel:
+        perfil["telefone"] = tel.group()
+    data = re.search(r"\d{1,2}/\d{1,2}(?:/\d{2,4})?", texto)
+    if data:
+        perfil["data_visita"] = data.group()
+    quartos = re.search(r"(\d)\s*quarto", texto, re.I)
+    if quartos:
+        perfil["quartos"] = int(quartos.group(1))
+    nome_match = re.search(
+        r"(?:me chamo|meu nome[eé ]+|sou o|sou a)\s+([A-ZÀ-Ú][a-zà-ú]+(?: [A-ZÀ-Ú][a-zà-ú]+)*)",
+        texto, re.I,
+    )
+    if nome_match:
+        perfil["nome"] = nome_match.group(1)
+    return perfil
+
 
 class handler(BaseHTTPRequestHandler):
-
     def do_POST(self):
-        length = int(self.headers.get('Content-Length', 0))
-        body = json.loads(self.rfile.read(length))
-        texto = body.get('texto', '')
-
-        acao = decidir_acao(texto)
-
-        if acao.get("acao") == "agendar":
-            resultado = agendar_visita(texto)
-        elif acao.get("acao") == "preco_medio":
-            resultado = preco_medio_cidade(texto)
-        elif acao.get("acao") == "corretores":
-            resultado = info_corretores(texto)
-        elif acao.get("acao") == "sem_filtro":
-            resultado = json.dumps({"tipo": "texto", "conteudo": "Em qual cidade você procura? Me diga a cidade e posso te mostrar as opções disponíveis! 😊"})
-        else:
-            resultado = buscar_imoveis(
-                texto=texto,
-                cidade=acao.get("cidade"),
-                tipo=acao.get("tipo"),
-                quartos=acao.get("quartos"),
-                finalidade=acao.get("finalidade"),
-                preco_max=acao.get("preco_max")
-            )
-
-        if isinstance(resultado, str):
-            try:
-                resultado = json.loads(resultado)
-            except:
-                resultado = {"tipo": "texto", "conteudo": resultado}
-
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        self.wfile.write(json.dumps(resultado, ensure_ascii=False).encode())
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length)
+        try:
+            data = json.loads(body)
+            texto = data.get("texto", "").strip()
+            session_id = data.get("session_id", "default")
+            if not texto:
+                self._responder(400, {"erro": "Campo 'texto' obrigatório."})
+                return
+            self._responder(200, orquestrar(texto, session_id))
+        except Exception as e:
+            self._responder(500, {"erro": str(e)})
 
     def do_OPTIONS(self):
         self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self._cors()
         self.end_headers()
+
+    def _responder(self, status, payload):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self._cors()
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
