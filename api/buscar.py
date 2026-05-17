@@ -208,7 +208,25 @@ PERFIL DO CLIENTE ATÉ AGORA: {json.dumps(perfil_merged, ensure_ascii=False)}"""
     }
     update_session(session_id, novo_estado)
 
-    return {"mensagem_sofia": resposta}
+    # Extrai imóveis do contexto para retornar fotos
+    imoveis_card = []
+    try:
+        from tools.property_search_advanced import buscar_imoveis
+        import json as _json
+        cidade = perfil_merged.get("cidade")
+        tipo = perfil_merged.get("tipo")
+        quartos = perfil_merged.get("quartos")
+        preco_max = perfil_merged.get("preco_max")
+        finalidade = perfil_merged.get("finalidade")
+        if cidade or tipo or quartos:
+            res = _json.loads(buscar_imoveis(cidade=cidade, tipo=tipo, quartos=quartos,
+                                             preco_max=preco_max, finalidade=finalidade, limit=3))
+            if res.get("tipo") == "imoveis":
+                imoveis_card = res.get("imoveis", [])
+    except:
+        pass
+
+    return {"mensagem_sofia": resposta, "imoveis": imoveis_card}
 
 
 class handler(BaseHTTPRequestHandler):

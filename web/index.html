@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sofia – Imobiliária Perto</title>
+  <title>Sofia - Imobiliaria Perto</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: 'Segoe UI', Roboto, sans-serif;
       background: #f0f2f5;
@@ -14,7 +13,6 @@
       flex-direction: column;
       height: 100dvh;
     }
-
     header {
       background: #1a1a2e;
       color: #fff;
@@ -24,7 +22,6 @@
       gap: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,.3);
     }
-
     header .avatar {
       width: 42px; height: 42px;
       border-radius: 50%;
@@ -32,10 +29,8 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 20px;
     }
-
     header .info h1 { font-size: 16px; font-weight: 600; }
     header .info span { font-size: 12px; color: #aaa; }
-
     #chat {
       flex: 1;
       overflow-y: auto;
@@ -44,7 +39,6 @@
       flex-direction: column;
       gap: 12px;
     }
-
     .msg {
       max-width: 78%;
       padding: 12px 16px;
@@ -54,7 +48,6 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
-
     .msg.sofia {
       background: #fff;
       color: #222;
@@ -62,14 +55,12 @@
       align-self: flex-start;
       box-shadow: 0 1px 4px rgba(0,0,0,.08);
     }
-
     .msg.user {
       background: #e94560;
       color: #fff;
       border-bottom-right-radius: 4px;
       align-self: flex-end;
     }
-
     .typing {
       align-self: flex-start;
       background: #fff;
@@ -78,7 +69,6 @@
       padding: 12px 18px;
       box-shadow: 0 1px 4px rgba(0,0,0,.08);
     }
-
     .typing span {
       display: inline-block;
       width: 8px; height: 8px;
@@ -88,12 +78,36 @@
     }
     .typing span:nth-child(2) { animation-delay: .15s; }
     .typing span:nth-child(3) { animation-delay: .3s; }
-
     @keyframes bounce {
       0%, 80%, 100% { transform: translateY(0); }
       40% { transform: translateY(-6px); }
     }
-
+    .cards-wrap {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 4px 0 8px;
+      scrollbar-width: thin;
+    }
+    .card {
+      min-width: 190px;
+      max-width: 190px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+      text-decoration: none;
+      color: inherit;
+      flex-shrink: 0;
+      transition: transform .2s;
+    }
+    .card:hover { transform: translateY(-3px); }
+    .card img { width: 100%; height: 115px; object-fit: cover; }
+    .card-body { padding: 8px 10px 10px; }
+    .card-tipo { font-size: 11px; font-weight: 700; color: #e94560; text-transform: uppercase; }
+    .card-local { font-size: 11px; color: #888; margin: 2px 0; }
+    .card-info { font-size: 11px; color: #666; }
+    .card-preco { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-top: 4px; }
     footer {
       background: #fff;
       padding: 12px 16px;
@@ -101,7 +115,6 @@
       display: flex;
       gap: 10px;
     }
-
     #input {
       flex: 1;
       border: 1.5px solid #ddd;
@@ -113,9 +126,7 @@
       resize: none;
       max-height: 120px;
     }
-
     #input:focus { border-color: #e94560; }
-
     #btn {
       background: #e94560;
       color: #fff;
@@ -128,13 +139,9 @@
       transition: background .2s;
       flex-shrink: 0;
     }
-
     #btn:hover { background: #c73652; }
     #btn:disabled { background: #ddd; cursor: default; }
-
-    @media (max-width: 480px) {
-      .msg { max-width: 90%; }
-    }
+    @media (max-width: 480px) { .msg { max-width: 90%; } }
   </style>
 </head>
 <body>
@@ -143,15 +150,15 @@
   <div class="avatar">🏠</div>
   <div class="info">
     <h1>Sofia</h1>
-    <span>Consultora Virtual – Imobiliária Perto</span>
+    <span>Consultora Virtual - Imobiliaria Perto</span>
   </div>
 </header>
 
 <div id="chat"></div>
 
 <footer>
-  <textarea id="input" rows="1" placeholder="Olá Sofia, estou procurando..."></textarea>
-  <button id="btn" title="Enviar">➤</button>
+  <textarea id="input" rows="1" placeholder="Ola Sofia, estou procurando..."></textarea>
+  <button id="btn" title="Enviar">&#10148;</button>
 </footer>
 
 <script>
@@ -160,7 +167,6 @@
   const input   = document.getElementById('input');
   const btn     = document.getElementById('btn');
 
-  // session_id persistido em localStorage
   function getSessionId() {
     let sid = localStorage.getItem('sofia_session_id');
     if (!sid) {
@@ -178,7 +184,34 @@
     div.textContent = texto;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
-    return div;
+  }
+
+  function addCards(imoveis) {
+    if (!imoveis || imoveis.length === 0) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'cards-wrap';
+    imoveis.forEach(im => {
+      const preco = im.preco
+        ? 'R$ ' + Number(im.preco).toLocaleString('pt-BR', {minimumFractionDigits: 0})
+        : 'Consulte';
+      const bairro = im.bairro ? im.bairro + ', ' : '';
+      const card = document.createElement('a');
+      card.className = 'card';
+      card.href = im.link || '#';
+      card.target = '_blank';
+      card.innerHTML =
+        '<img src="' + (im.foto || 'https://placehold.co/300x180?text=Sem+foto') + '" ' +
+        'onerror="this.src='https://placehold.co/300x180?text=Sem+foto'" alt="' + im.tipo + '"/>' +
+        '<div class="card-body">' +
+          '<div class="card-tipo">' + im.tipo + '</div>' +
+          '<div class="card-local">' + bairro + im.cidade + '</div>' +
+          '<div class="card-info">' + (im.quartos || 0) + ' qtos · ' + (im.metragem || 0) + 'm²</div>' +
+          '<div class="card-preco">' + preco + '</div>' +
+        '</div>';
+      wrap.appendChild(card);
+    });
+    chat.appendChild(wrap);
+    chat.scrollTop = chat.scrollHeight;
   }
 
   function showTyping() {
@@ -198,56 +231,44 @@
   async function enviar() {
     const texto = input.value.trim();
     if (!texto) return;
-
     addMsg(texto, 'user');
     input.value = '';
     input.style.height = 'auto';
     btn.disabled = true;
     showTyping();
-
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto, session_id: SESSION_ID })
+        body: JSON.stringify({ texto: texto, session_id: SESSION_ID })
       });
-
       const data = await res.json();
       hideTyping();
-
-      const msgSofia = data.mensagem_sofia
-        || data.erro
-        || 'Desculpe, ocorreu um erro. Tente novamente.';
-
-      addMsg(msgSofia, 'sofia');
-
+      addMsg(data.mensagem_sofia || data.erro || 'Erro inesperado.', 'sofia');
+      if (data.imoveis && data.imoveis.length > 0) {
+        addCards(data.imoveis);
+      }
     } catch (err) {
       hideTyping();
-      addMsg('Não consegui me conectar. Verifique sua internet e tente novamente.', 'sofia');
+      addMsg('Nao consegui me conectar. Tente novamente.', 'sofia');
     } finally {
       btn.disabled = false;
       input.focus();
     }
   }
 
-  // Envio com Enter (Shift+Enter = quebra de linha)
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      enviar();
-    }
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
   });
 
-  // Auto-resize do textarea
-  input.addEventListener('input', () => {
+  input.addEventListener('input', function() {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
   });
 
   btn.addEventListener('click', enviar);
 
-  // Mensagem de boas-vindas
-  addMsg('Olá! 👋 Sou a Sofia, consultora virtual da Imobiliária Perto.\nMe conta: qual imóvel você está procurando?', 'sofia');
+  addMsg('Ola! Sou a Sofia, consultora virtual da Imobiliaria Perto.\nMe conta: qual imovel voce esta procurando?', 'sofia');
 </script>
 
 </body>
