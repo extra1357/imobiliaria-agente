@@ -1,10 +1,8 @@
 {
   "version": 2,
-  "functions": {
-    "api/buscar.py": {
-      "runtime": "python3.12"
-    }
-  },
+  "builds": [
+    { "src": "api/buscar.py", "use": "@vercel/python" }
+  ],
   "routes": [
     { "src": "/buscar", "dest": "/api/buscar.py" },
     { "src": "/(.*)", "dest": "/web/$1" }
