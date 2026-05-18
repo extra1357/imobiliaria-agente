@@ -10,6 +10,8 @@ load_dotenv()
 
 from groq import Groq
 from core.memory import get_session, update_session
+from core.prompt import montar_prompt
+from core.agent import decidir_acao, montar_instrucao_acao
 from tools.property_search_advanced import buscar_imoveis, buscar_similares, interpretar_busca
 from tools.lead_capture import salvar_lead
 from tools.broker_info import info_corretores
@@ -169,24 +171,9 @@ def orquestrar(texto: str, session_id: str) -> dict:
 
     # Carrega contexto real do banco
     contexto_db = _carregar_contexto_db(perfil_merged)
-
-    SYSTEM_PROMPT = f"""Você é Sofia, consultora imobiliária virtual da Imobiliária Perto.
-Seu objetivo é ajudar clientes a encontrar o imóvel ideal com uma conversa natural e calorosa.
-
-DADOS REAIS DO BANCO (use SEMPRE esses dados nas respostas):
-{contexto_db}
-
-REGRAS:
-1. Use APENAS os imóveis listados acima — nunca invente imóveis.
-2. Se houver imóveis, descreva-os de forma envolvente mencionando bairro, quartos, metragem e preço.
-3. Sempre inclua o link do imóvel quando apresentar.
-4. Se não houver imóveis, peça nome e telefone para avisar quando disponível.
-5. Indique um corretor pelo nome quando o cliente quiser mais informações ou visita.
-6. Colete nome e telefone um de cada vez, de forma natural.
-7. Mantenha foco imobiliário. Mensagens curtas, máximo 3 parágrafos.
-8. Termine sempre com uma pergunta ou próximo passo claro.
-
-PERFIL DO CLIENTE ATÉ AGORA: {json.dumps(perfil_merged, ensure_ascii=False)}"""
+    acao = decidir_acao(perfil_merged, texto)
+    instrucao_acao = montar_instrucao_acao(acao, perfil_merged)
+    SYSTEM_PROMPT = montar_prompt(contexto_db, perfil_merged) + instrucao_acao
 
     historico.append({"role": "user", "content": texto})
 
